@@ -1,63 +1,40 @@
-# ტიფლისის გაშვება Vercel-ზე
+# ტიფლისი — Vercel და Supabase Auth
 
-რეპოზიტორიას დაემატა `vercel.json`, `api/index.ts` სერვერული ფუნქცია და `pnpm run build:vercel` ბრძანება. React ფაილები სტატიკურად ემსახურება, ხოლო `/api/*` მოთხოვნები გადადის დაცულ Express API-ზე. Docker/Render გაშვება შენარჩუნებულია. ეს არის მომზადებული კონფიგურაცია და არა უკვე გაშვებული Vercel საიტი.
+მთავარი მისამართი: https://tiflisi-staff.vercel.app . GitHub წყარო: https://github.com/tiflisi2020-alt/TIFLISI-STAFF . `main`-ზე push ავტომატურად იწყებს Vercel გაშვებას. გრძელი deployment URL კონკრეტულ ძველ ვერსიაზე რჩება; გამოიყენე მთავარი მისამართი.
 
-## რეპოზიტორიის იმპორტი
-
-გახსენი [Vercel-ის ახალი პროექტი](https://vercel.com/new), აირჩიე GitHub და შემოიტანე `tiflisi2020-alt/TIFLISI-STAFF`. თუ რეპოზიტორია არ ჩანს, Vercel-ის GitHub ინტეგრაციას ამ რეპოზიტორიაზე წვდომა მიეცი.
-
-აირჩიე შემდეგი პარამეტრები:
+## აწყობა
 
 | პარამეტრი | მნიშვნელობა |
 | --- | --- |
-| Framework Preset | Other |
-| Root Directory | რეპოზიტორიის ძირი; `client` არ აირჩიო |
-| Install Command | `pnpm install --frozen-lockfile` |
-| Build Command | `pnpm run build:vercel` |
-| Output Directory | `dist/public` |
-| Node.js Version | `22.x` |
+| Framework | Other |
+| Root Directory | რეპოზიტორიის ძირი |
+| Install Command | pnpm install --frozen-lockfile |
+| Build Command | pnpm run build:vercel |
+| Output Directory | dist/public |
+| Node | 22.x |
 
-ეს პარამეტრები უმეტესად `vercel.json`-იდან იკითხება. Dockerfile Vercel-ზე არ გამოიყენება.
+`api/index.js` იყენებს build-ისას CommonJS-ად შეფუთულ `server/vercel-handler.cjs` ფაილს. `/api/*` ემსახურება Express API, სხვა გვერდები React SPA-ა. Dockerfile Vercel-ზე არ გამოიყენება.
 
-## გარემოს ცვლადები
+## სერვერის გარემო
 
-Deploy-მდე დაამატე Environment Variables. Production-ში აუცილებელია; Preview გარემოშიც დაამატე, თუ preview მისამართზე შემოწმება გინდა.
+- `SUPABASE_SERVICE_ROLE_KEY` — მხოლოდ დაცულ server ველში. არ გამოიყენო `VITE_`/`NEXT_PUBLIC_` პრეფიქსი. არ ჩადო გასაღები GitHub-ში.
+- `MANUS_PROJECT_ID` — არსებული აპლიკაციის session audience; სახელის მიუხედავად აღარ არის ინტერაქტიული OAuth შესვლა.
+- `MANUS_JWT_SECRET` — ცალკე შემთხვევითი signing secret ამ ჰოსტინგისთვის; existing უსაფრთხო მნიშვნელობა შენარჩუნებულია. არ გამოიყენო Preview-ის სხვა signing secret.
 
-| სახელი | მნიშვნელობა |
-| --- | --- |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase restaurant-schedule პროექტის სწორი `service_role` გასაღები — მხოლოდ დაცულ ველში |
-| `MANUS_PROJECT_ID` | `kPBybXAYXRSGNQKjsC7Gs8` — საჯარო OAuth კლიენტის იდენტიფიკატორი |
-| `MANUS_OAUTH_PORTAL_URL` | `https://manus.im` |
-| `MANUS_OAUTH_API_URL` | `https://api.manus.ai` |
-| `MANUS_JWT_SECRET` | ახალი, შემთხვევითი ძლიერი საიდუმლო მნიშვნელობა; სულ მცირე 32 შემთხვევითი ბაიტი |
+`MANUS_OAUTH_PORTAL_URL` და `MANUS_OAUTH_API_URL` აღარ მონაწილეობენ თანამშრომლის ინტერაქტიულ შესვლაში. ძველი მნიშვნელობების ყოფნა Manus-ზე გადამისამართებას არ ააქტიურებს.
 
-`MANUS_JWT_SECRET` შეგიძლია შენს ტერმინალში შექმნა `openssl rand -hex 32` ბრძანებით. შედეგი ჩასვი მხოლოდ Vercel-ის დაცულ ველში, არა GitHub-ში ან ჩატში. Manus Preview-ის არსებული საიდუმლო არ დააკოპირო. ამ ახალი ჰოსტინგისთვის სესიის საიდუმლო ცალკეა.
+## Supabase Auth
 
-სერვერული Supabase გასაღები არ უნდა იყოს `anon` ტიპის და მის სახელს `VITE_` ან `NEXT_PUBLIC_` პრეფიქსი არ დაამატო. ადრე ჩატში გაზიარებული გასაღების როტაცია რეკომენდებულია. GitHub-ში რეალური საიდუმლო მნიშვნელობები არ არის შეტანილი.
+მომხმარებლის თანხმობით აპლიკაცია გადავიდა **Supabase email/password Auth-ზე**. `/login` აჩვენებს ქართულ შესვლისა და რეგისტრაციის ფორმებს; `/reset-password` ამუშავებს აღდგენის წერილის დაბრუნებას. ძველი `/api/oauth/start` მხოლოდ `/login`-ზე გადადის. მონაცემთა ბაზა ისევ `restaurant-schedule` პროექტია, `bbroknpeebjuilycutjd`.
 
-დააჭირე Deploy-ს. დასრულების შემდეგ მიიღებ მისამართს, მაგალითად `https://tiflisi-staff.vercel.app`. პროექტის რეალური URL შეიძლება განსხვავდებოდეს.
+Supabase Redirect URLs-ში დამატებულია (მომხმარებლის დადასტურებით):
+- https://tiflisi-staff.vercel.app/login
+- https://tiflisi-staff.vercel.app/reset-password
 
-## ავტორიზაცია ცალკე უნდა შემოწმდეს
+მენეჯერის პირველი ნაბიჯი: `/login` → რეგისტრაცია → `merabtamoevi@gmail.com` და საკუთარი ძლიერი პაროლი → მიღებული წერილის დადასტურება → შესვლა. პაროლი ჩატში არ გამოაგზავნო. მენეჯერის უფლება ენიჭება მხოლოდ Supabase-ის მიერ დადასტურებულ ამ email-ს; სხვა მომხმარებლის role ან metadata არ იძლევა ადმინისტრაციის წვდომას. ძველი ანგარიშის numeric ID და კავშირები გადაიბმება მხოლოდ დადასტურებული იგივე email-ით შესვლის შემდეგ.
 
-ამ აპლიკაციაში შესვლა ჯერ კიდევ **Manus OAuth**-ით ხდება და არა Supabase-ის ელფოსტა/პაროლით. Vercel-ის დაყენება ამ მეთოდს ავტომატურად არ ცვლის.
+Supabase-ის ჩაშენებული email sending საცდელი და შეზღუდულია; მიწოდების შეცდომის შემთხვევაში SMTP შეიძლება გახდეს საჭირო. დადასტურება არ გამოირთოს. უფრო ვრცლად: [Supabase Auth](supabase-auth.md).
 
-ახალი საიტის callback არის `https://შენი-საიტი.vercel.app/api/oauth/callback`. ეს მისამართი უნდა იყოს დაშვებული OAuth პროვაიდერის redirect პოლიტიკით. მხოლოდ გარემოს ცვლადების დამატება callback-ის მიღებას არ უზრუნველყოფს. ამ კონფიგურაციით რეალური Vercel ავტორიზაცია ჯერ არ შემოწმებულა.
+## შემოწმება
 
-თუ პროვაიდერი ახალ მისამართს ბლოკავს, საჭიროა callback-ის დაშვების საკითხის მოგვარება ან ცალკე შეთანხმებული გადასვლა Supabase Auth-ზე. ასეთ შემთხვევაში პაროლი ან ელფოსტის ჩაწერა არ გამოიყენება დაცვის გვერდის ავლით. არ ჩავთვალოთ ადმინისტრატორის შესვლა გამართულად, სანამ რეალური ავტორიზაცია არ დასრულდება.
-
-მენეჯერის ელფოსტა კვლავ `merabtamoevi@gmail.com`-ია. როლი რეალური OAuth იდენტობიდან მოწმდება. ადმინისტრატორის გვერდი `/admin` მისამართზეა.
-
-## გაშვების შემოწმება
-
-`/api/health` უნდა აბრუნებდეს `{"status":"ok"}`. მთავარი და `/admin` გვერდები უნდა იხსნებოდეს. გუნდის 35 თანამშრომელი Supabase-დან უნდა ჩაიტვირთოს. ანონიმური ადმინისტრატორის API უნდა იყოს დაბლოკილი. შემდეგ სცადე მენეჯერის რეალური შესვლა. ნებადართული, განზრახ ცვლილების გარეშე რეალური განრიგი ტესტისთვის არ შეცვალო.
-
-თუ build ვერ დასრულდა, გახსენი Deployment → Build Logs და გააზიარე შეცდომის ტექსტი ან სქრინშოტი საიდუმლო მნიშვნელობების გარეშე. ცვლადების შეცვლის შემდეგ გაუშვი Redeploy.
-
-## ოფიციალური წყაროები
-
-- [Vercel Express მხარდაჭერა](https://vercel.com/docs/frameworks/backend/express)
-- [Vercel Node.js Functions](https://vercel.com/docs/functions/runtimes/node-js)
-
-Vercel-ის build ახლა თვითონ ქმნის Build Output API-ის სრულ ფაილებს: სტატიკურ frontend-ს და ყველა საჭირო დამოკიდებულებით შეფუთულ Node ფუნქციას. ეს გვერდს უვლის ავტომატური TypeScript ფუნქციის შეფუთვისას გამოვლენილ runtime შეცდომას.
-
-ფუნქციის მოქმედი შესასვლელია `api/index.js`, რომელიც build-ის დროს შექმნილ `server/vercel-handler.cjs` შეფუთვას ტვირთავს.
+`/api/health` აბრუნებს success-ს; `/api/auth/status` აბრუნებს `provider: supabase`. საჯარო roster და shifts Supabase-იდან იტვირთება. ანონიმურ admin API-ს წვდომა არ აქვს. ავტომატური ტესტები ანგარიშებისა და განრიგის რეალურ ცვლილებებს არ აკეთებს; ისინი ამოწმებს დაუდასტურებელი identity-ის უარს, cookie-ს უსაფრთხოებას, ძველი სესიების გაუქმებასა და verified-email migration-ს. მენეჯერის რეალური რეგისტრაცია/დადასტურება მომხმარებელმა პირადად უნდა დაასრულოს.

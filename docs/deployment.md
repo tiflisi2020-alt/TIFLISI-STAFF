@@ -10,15 +10,11 @@ The Dockerfile installs locked dependencies, builds the app and runs `node dist/
 
 Supply the environment variables declared in `.env.example` in the hosting dashboard. Never put real keys in GitHub, README files, `render.yaml`, frontend code or build output. The Supabase key must be a server-side service-role key for the existing restaurant-schedule project. Use a new rotated key because a previous key was shared in chat. The app's existing database tables and policies remain unchanged by deployment.
 
-## Authentication must be configured separately
+## Authentication
 
-The current app uses **Manus OAuth**, not a Supabase password login. Preserve that provider unless a migration is explicitly agreed. The host needs the public OAuth project/client identifier and public authorization/API endpoints. Configure them in the dashboard; no real values are committed in this repository.
+Interactive login now uses **Supabase Auth email/password**, as explicitly approved by the restaurant owner. The deployed site is https://tiflisi-staff.vercel.app. See [Supabase Auth](supabase-auth.md) for verified-email requirements and exact redirect URLs. Signup/reset redirects are currently configured for this canonical Vercel origin. Moving to another hosting origin requires updating the explicit application origins and adding its exact login/reset redirect URLs first; Render has not been deployed.
 
-Use a fresh cryptographically random `MANUS_JWT_SECRET` for the standalone host. This secret signs this application's own sessions; it must not be copied from the Manus Preview environment. Existing Preview sessions will not work on the new host.
-
-Before claiming login works, the new site's HTTPS callback URL (`https://YOUR-SERVICE.onrender.com/api/oauth/callback`) must be accepted by the Manus OAuth redirect policy. The source upload does **not** establish that acceptance. If the provider rejects the new origin, keep login closed and resolve callback registration or explicitly migrate authentication to Supabase. Do not bypass login or trust an email typed into a form to grant administrative access.
-
-The manager identity remains `merabtamoevi@gmail.com`, checked from a real OAuth identity on the server. Normal employees cannot grant themselves the admin role. All administration routes remain server-protected.
+`MANUS_PROJECT_ID` and `MANUS_JWT_SECRET` names remain for this application's own signed session audience/secret; they do not send users to Manus. Keep all server secrets in the host dashboard. The only admin email is `merabtamoevi@gmail.com`, verified by Supabase on the server. Do not grant access based on user metadata or an unconfirmed email.
 
 ## Checks before sharing the site
 
@@ -28,7 +24,7 @@ After the first successful deployment, enable automatic deployment from `main` i
 
 ## Local development
 
-Install Node.js 22 and pnpm 10.18.0. Copy `.env.example` to an ignored `.env` file and supply runtime values. Run `pnpm install --frozen-lockfile`, then `pnpm dev`. Run `pnpm check`, `pnpm test` and `pnpm build` before deployment. `pnpm start` runs the production build. The browser OAuth callback still requires an accepted HTTPS origin; a local HTTP URL is not assumed to be permitted.
+Install Node.js 22 and pnpm 10.18.0. Copy `.env.example` to an ignored `.env` file and supply runtime values. Run `pnpm install --frozen-lockfile`, then `pnpm dev`. Run `pnpm check`, `pnpm test` and `pnpm build` before deployment. `pnpm start` runs the production build. Login forms currently target the canonical HTTPS deployment origin.
 
 ## Official references
 
