@@ -79,4 +79,5 @@ export type AccountRow = {
   created_at: string;
   updated_at: string;
   last_signed_in: string;
+  session_version: number;
 };

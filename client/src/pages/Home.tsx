@@ -76,7 +76,7 @@ export default function Home() {
       {viewingOther && (
         <div className="view-mode">
           <span className="status-dot" /> {selected?.name} · განრიგის ნახვა{" "}
-          <Link href="/profile">
+          <Link href={auth.user ? "/profile" : "/login"}>
             {auth.user ? "ჩემი პროფილი" : "ანგარიშში შესვლა"}{" "}
             <ArrowUpRight size={13} />
           </Link>

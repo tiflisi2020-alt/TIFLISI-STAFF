@@ -52,6 +52,17 @@ describe("admin controls", () => {
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mock).not.toHaveBeenCalled();
   });
+  it("does not grant admin to OWNER_OPEN_ID with a different email", async () => {
+    vi.stubEnv("OWNER_OPEN_ID", "supabase:other-owner");
+    await expect(
+      caller({
+        ...manager,
+        openId: "supabase:other-owner",
+        email: "other@example.com",
+      }).updateShift(input)
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mock).not.toHaveBeenCalled();
+  });
   it("permits the exact manager to page requests", async () => {
     mock.mockResolvedValue([]);
     await caller().requests({ status: "pending", page: 1 });

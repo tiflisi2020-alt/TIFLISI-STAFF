@@ -12,6 +12,7 @@ import Profile from "./pages/Profile";
 import Swap from "./pages/Swap";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import Login from "./pages/Login";
 
 export default function App() {
   return (
@@ -28,6 +29,8 @@ export default function App() {
                 <Route path="/profile" component={Profile} />
                 <Route path="/swap" component={Swap} />
                 <Route path="/admin" component={Admin} />
+                <Route path="/login" component={Login} />
+                <Route path="/reset-password" component={Login} />
                 <Route component={NotFound} />
               </Switch>
             </Layout>
