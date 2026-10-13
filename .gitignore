@@ -119,3 +119,5 @@ client/public/__manus__/version.json
 
 # Vercel local linkage and generated build artifacts
 .vercel/
+
+server/vercel-handler.cjs
