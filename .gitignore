@@ -116,3 +116,6 @@ temp/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
+
+# Vercel local linkage and generated build artifacts
+.vercel/

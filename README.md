@@ -39,4 +39,4 @@ Never commit `.env`, the Supabase service-role key, or application session signi
 
 ## Vercel deployment
 
-The repository now includes `vercel.json` and a serverless Express API handler. Import the repository with **Framework: Other**, root directory at the repository root, build command `pnpm run build:vercel`, output directory `dist/public`, and Node.js 22.x. Configure runtime secrets in Vercel, never in GitHub. See [the Georgian Vercel guide](docs/vercel.md) for exact values and the external OAuth callback prerequisite. Deployment readiness is not proof of a live Vercel deployment or a working external login.
+The repository now includes `vercel.json` and a serverless Express API handler. Import the repository with **Framework: Other**, root directory at the repository root, build command `pnpm run build:vercel`, output directory `.vercel/output`, and Node.js 22.x. Configure runtime secrets in Vercel, never in GitHub. See [the Georgian Vercel guide](docs/vercel.md) for exact values and the external OAuth callback prerequisite. Deployment readiness is not proof of a live Vercel deployment or a working external login.

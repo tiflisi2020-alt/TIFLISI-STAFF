@@ -14,7 +14,7 @@
 | Root Directory | რეპოზიტორიის ძირი; `client` არ აირჩიო |
 | Install Command | `pnpm install --frozen-lockfile` |
 | Build Command | `pnpm run build:vercel` |
-| Output Directory | `dist/public` |
+| Output Directory | `.vercel/output` |
 | Node.js Version | `22.x` |
 
 ეს პარამეტრები უმეტესად `vercel.json`-იდან იკითხება. Dockerfile Vercel-ზე არ გამოიყენება.
@@ -57,3 +57,5 @@ Deploy-მდე დაამატე Environment Variables. Production-ში 
 
 - [Vercel Express მხარდაჭერა](https://vercel.com/docs/frameworks/backend/express)
 - [Vercel Node.js Functions](https://vercel.com/docs/functions/runtimes/node-js)
+
+Vercel-ის build ახლა თვითონ ქმნის Build Output API-ის სრულ ფაილებს: სტატიკურ frontend-ს და ყველა საჭირო დამოკიდებულებით შეფუთულ Node ფუნქციას. ეს გვერდს უვლის ავტომატური TypeScript ფუნქციის შეფუთვისას გამოვლენილ runtime შეცდომას.
