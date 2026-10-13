@@ -16,7 +16,7 @@ import { useState, type ReactNode } from "react";
 import { useStaff } from "@/contexts/StaffContext";
 import { Avatar } from "./Shared";
 import { restaurantDate } from "@shared/schedule";
-import { startLogin } from "@/const";
+import { getLoginHref } from "@/const";
 
 const nav = [
   { path: "/", label: "მთავარი", icon: Home },
@@ -242,12 +242,9 @@ export default function Layout({ children }: { children: ReactNode }) {
               ))}
             </div>
             {!auth.user && (
-              <button
-                className="secondary-button full-width"
-                onClick={() => startLogin()}
-              >
+              <a className="secondary-button full-width" href={getLoginHref()}>
                 <LogIn size={17} /> ანგარიშში შესვლა
-              </button>
+              </a>
             )}
           </div>
         </div>

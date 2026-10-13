@@ -25,7 +25,7 @@ import {
   GeorgianDate,
   PageHeading,
 } from "@/components/staff/Shared";
-import { startLogin } from "@/const";
+import { getLoginHref } from "@/const";
 
 type Department = "waiters" | "chefs" | "cleaners" | "cashiers" | "hostesses";
 type Status = "pending" | "approved" | "rejected" | "all";
@@ -123,9 +123,9 @@ export default function Admin() {
           სამართავი გვერდი ხელმისაწვდომია მხოლოდ მენეჯერისთვის. შედი
           merabtamoevi@gmail.com ანგარიშით.
         </p>
-        <button className="primary-button" onClick={() => startLogin()}>
+        <a className="primary-button" href={getLoginHref()}>
           <LogIn size={17} /> ანგარიშში შესვლა
-        </button>
+        </a>
       </section>
     );
   if (!isAdmin)

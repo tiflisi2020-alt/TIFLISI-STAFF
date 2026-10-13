@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { Link } from "wouter";
 import { useStaff } from "@/contexts/StaffContext";
 import { trpc } from "@/lib/trpc";
-import { startLogin } from "@/const";
+import { getLoginHref } from "@/const";
 import { departmentLabels, isWorking, prettyTime } from "@shared/schedule";
 import {
   Avatar,
@@ -105,9 +105,9 @@ export default function Profile() {
               მიერ თანამშრომელთან დაკავშირებული ანგარიში.
             </p>
           </div>
-          <button className="primary-button" onClick={() => startLogin()}>
+          <a className="primary-button" href={getLoginHref()}>
             <LogIn size={17} /> ანგარიშში შესვლა
-          </button>
+          </a>
         </section>
       )}
       {auth.user && !myStaff && (
