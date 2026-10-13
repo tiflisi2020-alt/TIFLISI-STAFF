@@ -1,0 +1,26 @@
+# Deploy the full Node.js server, not a static site or GitHub Pages.
+# Review hosting terms in Render before creating the service.
+services:
+  - type: web
+    name: tiflisi-staff
+    runtime: docker
+    plan: free
+    repo: https://github.com/tiflisi2020-alt/TIFLISI-STAFF
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: MANUS_PROJECT_ID
+        sync: false
+      - key: MANUS_OAUTH_PORTAL_URL
+        sync: false
+      - key: MANUS_OAUTH_API_URL
+        sync: false
+      - key: MANUS_JWT_SECRET
+        generateValue: true
