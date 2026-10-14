@@ -1,6 +1,5 @@
 # TIFLISI-STAFF
 
-
 Restaurant „ტიფლისი“ staff scheduling application, with a Georgian interface, weekly schedules, team directory, shift-swap requests and a protected administration page.
 
 ## Run the website
@@ -19,7 +18,7 @@ The admin identity is verified from a confirmed Supabase email/password account.
 
 ## Development
 
-Use Node.js 22 and pnpm 10.18.0. Create an ignored `.env` from `.env.example`, then run:
+Use Node.js 22 and pnpm 10.34.5. Create an ignored `.env` from `.env.example`, then run:
 
 ```sh
 pnpm install --frozen-lockfile

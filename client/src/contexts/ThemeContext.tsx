@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { readLocalStorage, writeLocalStorage } from "@/lib/safeStorage";
 
 type Theme = "light" | "dark";
 
@@ -23,8 +24,8 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (switchable) {
-      const stored = localStorage.getItem("theme");
-      return (stored as Theme) || defaultTheme;
+      const stored = readLocalStorage("theme");
+      return stored === "light" || stored === "dark" ? stored : defaultTheme;
     }
     return defaultTheme;
   });
@@ -38,7 +39,7 @@ export function ThemeProvider({
     }
 
     if (switchable) {
-      localStorage.setItem("theme", theme);
+      writeLocalStorage("theme", theme);
     }
   }, [theme, switchable]);
 
