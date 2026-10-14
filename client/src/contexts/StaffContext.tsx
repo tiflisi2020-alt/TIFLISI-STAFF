@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { trpc } from "@/lib/trpc";
+import { readLocalStorage, writeLocalStorage } from "@/lib/safeStorage";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   addDays,
@@ -22,7 +23,7 @@ function useStaffState() {
     retry: 1,
   });
   const [staffId, setStaffId] = useState(
-    () => localStorage.getItem("tiflisi-view-staff") ?? ""
+    () => readLocalStorage("tiflisi-view-staff") ?? ""
   );
   const [week, setWeek] = useState(() => mondayOf(restaurantDate()));
   const [day, setDay] = useState(() => restaurantToday());
@@ -50,7 +51,7 @@ function useStaffState() {
   }, [myStaff?.id]);
   const selectStaff = (id: string) => {
     setStaffId(id);
-    localStorage.setItem("tiflisi-view-staff", id);
+    writeLocalStorage("tiflisi-view-staff", id);
   };
   const selectDate = (date: string) => {
     setDay(date);

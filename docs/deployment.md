@@ -24,7 +24,7 @@ After the first successful deployment, enable automatic deployment from `main` i
 
 ## Local development
 
-Install Node.js 22 and pnpm 10.18.0. Copy `.env.example` to an ignored `.env` file and supply runtime values. Run `pnpm install --frozen-lockfile`, then `pnpm dev`. Run `pnpm check`, `pnpm test` and `pnpm build` before deployment. `pnpm start` runs the production build. Login forms currently target the canonical HTTPS deployment origin.
+Install Node.js 22 and pnpm 10.34.5. Copy `.env.example` to an ignored `.env` file and supply runtime values. Run `pnpm install --frozen-lockfile`, then `pnpm dev`. Run `pnpm check`, `pnpm test` and `pnpm build` before deployment. `pnpm start` runs the production build. Login forms currently target the canonical HTTPS deployment origin.
 
 ## Official references
 
