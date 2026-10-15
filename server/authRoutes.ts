@@ -28,6 +28,10 @@ const allowedOrigins = new Set([
   "https://8328-iuhvk1pbi9bqbz79r589t-91545ddf.us1.manus.computer",
   "https://3000-iuhvk1pbi9bqbz79r589t-91545ddf.us1.manus.computer",
 ]);
+if (process.env.NODE_ENV !== "production") {
+  allowedOrigins.add("http://localhost:3000");
+  allowedOrigins.add("http://127.0.0.1:3000");
+}
 
 export function requireSameOrigin(
   req: Request,

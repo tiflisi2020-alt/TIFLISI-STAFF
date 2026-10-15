@@ -137,4 +137,104 @@ describe("admin controls", () => {
       notes: "განახლება",
     });
   });
+  it("rejects a duplicate employee before inserting", async () => {
+    mock.mockImplementation(async table =>
+      table === "waiters" ? [{ id: 1, name: "Staff A" }] : []
+    );
+    await expect(
+      caller().createEmployee({
+        department: "waiters",
+        name: "Staff A",
+        phone: "",
+      })
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(mock.mock.calls.some(call => call[2]?.method === "POST")).toBe(
+      false
+    );
+  });
+  it("adds an employee after the current order", async () => {
+    mock.mockImplementation(async (table, query, options) => {
+      if (options?.method === "POST") return [{ id: 9 }];
+      if (String(query).includes("position_order.desc"))
+        return [{ position_order: 3 }];
+      if (table === "waiters") return [{ id: 1, name: "Staff A" }];
+      return [];
+    });
+    await expect(
+      caller().createEmployee({
+        department: "waiters",
+        name: "ახალი",
+        phone: "555",
+      })
+    ).resolves.toEqual({ id: "waiters:9" });
+    const post = mock.mock.calls.find(call => call[2]?.method === "POST");
+    expect(post?.[2]?.body).toEqual({
+      name: "ახალი",
+      phone: "555",
+      position_order: 4,
+    });
+  });
+  it("renames schedule rows when an employee name changes", async () => {
+    mock.mockImplementation(async (table, query, options) => {
+      if (options?.method === "PATCH") return [{ id: 1 }];
+      if (table === "waiters" && String(query).startsWith("select=id,name"))
+        return [{ id: 1, name: "Staff A" }];
+      return [];
+    });
+    await caller().updateEmployee({
+      department: "waiters",
+      staffId: "waiters:1",
+      name: "Staff B",
+      phone: "",
+      positionOrder: 2,
+    });
+    expect(mock).toHaveBeenCalledWith(
+      "waiter_positions",
+      "waiter_name=eq.Staff%20A",
+      { method: "PATCH", body: { waiter_name: "Staff B" } }
+    );
+  });
+  it("removes the roster row and unlinks accounts without deleting shifts", async () => {
+    mock.mockImplementation(async (table, query, options) => {
+      if (options?.method === "PATCH" || options?.method === "DELETE")
+        return [{ id: 1 }];
+      if (table === "waiters" && String(query).startsWith("select=id,name"))
+        return [{ id: 1, name: "Staff A" }];
+      return [];
+    });
+    await caller().deleteEmployee({
+      department: "waiters",
+      staffId: "waiters:1",
+    });
+    const writes = mock.mock.calls.filter(call => call[2]?.method);
+    expect(writes.map(call => [call[0], call[2]?.method])).toEqual([
+      ["tiflisi_accounts", "PATCH"],
+      ["tiflisi_staff_status", "DELETE"],
+      ["waiters", "DELETE"],
+    ]);
+    expect(writes.some(call => call[0] === "waiter_positions")).toBe(false);
+  });
+  it("stores the employee on/off state without changing the roster row", async () => {
+    mock.mockImplementation(async (table, _query, options) => {
+      if (table === "waiters") return [{ id: 1 }];
+      if (options?.method === "POST") return [{ staff_id: "waiters:1" }];
+      return [];
+    });
+    await expect(
+      caller().setEmployeeActive({
+        department: "waiters",
+        staffId: "waiters:1",
+        active: false,
+      })
+    ).resolves.toEqual({ active: false });
+    const post = mock.mock.calls.find(call => call[2]?.method === "POST");
+    expect(post?.[0]).toBe("tiflisi_staff_status");
+    expect(post?.[2]?.body).toMatchObject({
+      staff_id: "waiters:1",
+      active: false,
+    });
+    expect(mock.mock.calls.some(call => call[2]?.method === "PATCH")).toBe(
+      false
+    );
+  });
 });

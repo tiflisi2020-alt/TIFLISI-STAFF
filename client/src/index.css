@@ -1629,7 +1629,8 @@ select:focus {
 }
 .swap-form select,
 .swap-form textarea,
-.manager-form select {
+.manager-form select,
+.manager-form input {
   display: block;
   width: 100%;
   margin-top: 10px;
@@ -2702,6 +2703,120 @@ select:focus {
   border-radius: 8px;
   padding: 10px 13px;
 }
+.admin-weekbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 8px 0 18px;
+  flex-wrap: wrap;
+}
+.admin-weekbar label {
+  display: block;
+  min-width: 220px;
+  font-size: 11px;
+  color: #607e8e;
+}
+.admin-weekbar select {
+  width: 100%;
+  display: block;
+  margin-top: 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  padding: 12px;
+  min-height: 45px;
+  color: #587585;
+}
+.admin-weeknav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-weeknav > div {
+  min-width: 150px;
+  text-align: center;
+}
+.admin-weeknav b,
+.admin-weeknav span {
+  display: block;
+}
+.admin-weeknav span {
+  margin-top: 4px;
+  font-size: 10px;
+  color: #94a6b0;
+}
+.admin-board-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: white;
+}
+.admin-board {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+}
+.admin-board th,
+.admin-board td {
+  padding: 8px;
+  border-bottom: 1px solid #f0f4f6;
+  vertical-align: middle;
+}
+.admin-board thead th {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7c96a4;
+  text-align: center;
+}
+.admin-board thead th small {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #263a49;
+}
+.admin-board thead th.is-today small {
+  color: var(--primary);
+}
+.admin-board tbody th,
+.admin-board thead th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 148px;
+  background: white;
+  text-align: left;
+  font-size: 12px;
+}
+.admin-cell {
+  width: 100%;
+  min-height: 58px;
+  border-radius: 10px;
+  background: #f7fafb;
+  color: #9aadb6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.admin-cell strong {
+  font-size: 12px;
+}
+.admin-cell small {
+  font-size: 9px;
+}
+.admin-cell.working {
+  background: #e7f3f5;
+  color: #216c80;
+}
+.admin-cell.today {
+  box-shadow: inset 0 0 0 1px #d7e4c8;
+}
+.admin-cell.selected {
+  box-shadow: inset 0 0 0 2px #216c80;
+  background: #dff0f3;
+}
 .admin-tabs {
   display: flex;
   gap: 9px;
@@ -2827,6 +2942,42 @@ select:focus {
 .admin-account-list .muted {
   font-size: 10px;
 }
+.employee-create {
+  margin-top: 8px;
+}
+.employee-note {
+  margin-top: 14px;
+  font-size: 11px;
+}
+.employee-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.employee-off {
+  opacity: 0.62;
+}
+.employee-toggle.on {
+  color: #216c80;
+  background: #e7f3f5;
+  border-color: #c5e0e6;
+}
+.employee-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+.employee-edit input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 40px;
+  min-width: 0;
+}
+.employee-edit input:first-child {
+  flex: 1 1 180px;
+}
 .admin-profile-link {
   margin-bottom: 23px;
 }
@@ -2848,6 +2999,14 @@ select:focus {
     font-size: 8px;
     padding: 8px;
     gap: 4px;
+  }
+  .admin-weekbar,
+  .admin-weeknav {
+    align-items: stretch;
+  }
+  .admin-weeknav {
+    width: 100%;
+    justify-content: space-between;
   }
   .admin-tabs {
     flex-wrap: nowrap;

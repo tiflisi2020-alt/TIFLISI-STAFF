@@ -56,21 +56,28 @@ export type SwapRow = {
 };
 
 export async function getStaff(): Promise<Staff[]> {
-  const batches = await Promise.all(
-    Object.entries(departments).map(async ([department, config]) => {
-      const rows = await supabase<{ id: string | number; name: string }[]>(
-        department,
-        "select=id,name&order=position_order.asc,name.asc&limit=500"
-      );
-      return rows.map(row => ({
-        id: `${department}:${row.id}`,
-        name: row.name,
-        department,
-        role: config.role,
-      }));
-    })
-  );
-  return batches.flat();
+  const [batches, inactive] = await Promise.all([
+    Promise.all(
+      Object.entries(departments).map(async ([department, config]) => {
+        const rows = await supabase<{ id: string | number; name: string }[]>(
+          department,
+          "select=id,name&order=position_order.asc,name.asc&limit=500"
+        );
+        return rows.map(row => ({
+          id: `${department}:${row.id}`,
+          name: row.name,
+          department,
+          role: config.role,
+        }));
+      })
+    ),
+    supabase<{ staff_id: string }[]>(
+      "tiflisi_staff_status",
+      "select=staff_id&active=eq.false&limit=500"
+    ),
+  ]);
+  const hidden = new Set(inactive.map(row => row.staff_id));
+  return batches.flat().filter(person => !hidden.has(person.id));
 }
 
 export async function getShifts(from: string, to: string): Promise<Shift[]> {

@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import {
   CalendarDays,
   Check,
+  UserRoundPlus,
   ChevronLeft,
   ChevronRight,
   Link2,
@@ -16,7 +17,11 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useStaff } from "@/contexts/StaffContext";
 import {
+  addDays,
+  dateKey,
   departmentLabels,
+  isWorking,
+  mondayOf,
   prettyTime,
   restaurantToday,
 } from "@shared/schedule";
@@ -26,6 +31,7 @@ import {
   PageHeading,
 } from "@/components/staff/Shared";
 import { getLoginHref } from "@/const";
+import { EmployeeManager } from "@/components/staff/EmployeeManager";
 
 type Department = "waiters" | "chefs" | "cleaners" | "cashiers" | "hostesses";
 type Status = "pending" | "approved" | "rejected" | "all";
@@ -40,9 +46,9 @@ export default function Admin() {
   const { auth, staff } = useStaff();
   const utils = trpc.useUtils();
   const isAdmin = auth.user?.role === "admin";
-  const [tab, setTab] = useState<"schedule" | "requests" | "accounts">(
-    "schedule"
-  );
+  const [tab, setTab] = useState<
+    "schedule" | "employees" | "requests" | "accounts"
+  >("schedule");
   const [department, setDepartment] = useState<Department>("waiters");
   const [staffId, setStaffId] = useState("");
   const [date, setDate] = useState(restaurantToday());
@@ -55,13 +61,38 @@ export default function Admin() {
   const [linkedStaff, setLinkedStaff] = useState("");
   const roster = staff.filter(s => s.department === department);
   const person = roster.find(s => s.id === staffId) ?? roster[0];
+  const weekStart = mondayOf(new Date(`${date}T12:00:00`));
+  const weekDays = Array.from({ length: 7 }, (_, index) =>
+    addDays(weekStart, index)
+  );
+  const weekKeys = weekDays.map(dateKey);
   const shifts = trpc.staff.shifts.useQuery(
-    { from: date, to: date },
-    { enabled: !!isAdmin && !!date, retry: false }
+    { from: weekKeys[0], to: weekKeys[6] },
+    { enabled: !!isAdmin, retry: false }
   );
   const current = shifts.data?.find(
-    s => s.name === person?.name && s.department === department
+    s =>
+      s.name === person?.name &&
+      s.department === department &&
+      s.date === date
   );
+  const moveWeek = (delta: number) =>
+    setDate(dateKey(addDays(new Date(`${date}T12:00:00`), delta * 7)));
+  const timeChoices = [
+    "OFF",
+    "09:00",
+    "10:00",
+    "11:00",
+    "12:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00",
+    "18:00",
+    "19:00",
+    "20:00",
+  ];
+  if (!timeChoices.includes(time)) timeChoices.unshift(time);
   const requests = trpc.admin.requests.useQuery(
     { status, page },
     { enabled: !!isAdmin, retry: false }
@@ -175,7 +206,7 @@ export default function Admin() {
       <PageHeading
         eyebrow="რესტორანის მართვა"
         title="ადმინისტრაცია"
-        description="განრიგი, გაცვლის მოთხოვნები და ანგარიშების დაკავშირება."
+        description="განრიგი, თანამშრომლები, გაცვლის მოთხოვნები და ანგარიშების დაკავშირება."
         action={
           <span className="admin-access">
             <ShieldCheck size={17} /> ადმინისტრატორის წვდომა
@@ -200,6 +231,12 @@ export default function Admin() {
           <CalendarDays size={16} /> განრიგის მართვა
         </button>
         <button
+          className={tab === "employees" ? "active" : ""}
+          onClick={() => setTab("employees")}
+        >
+          <UserRoundPlus size={16} /> თანამშრომლები
+        </button>
+        <button
           className={tab === "requests" ? "active" : ""}
           onClick={() => setTab("requests")}
         >
@@ -215,29 +252,156 @@ export default function Admin() {
       {tab === "schedule" && (
         <section className="manager-panel">
           <div className="section-title">
-            <h2>ცვლის დამატება / რედაქტირება</h2>
-            <button className="text-link" onClick={() => shifts.refetch()}>
+            <h2>კვირის განრიგი</h2>
+            <button
+              className="text-link"
+              type="button"
+              onClick={() => shifts.refetch()}
+            >
               <RefreshCw size={14} /> განახლება
             </button>
           </div>
-          <form onSubmit={submit} className="admin-edit-form">
-            <div className="admin-form-grid">
-              <label>
-                დეპარტამენტი
-                <select
-                  value={department}
-                  onChange={e => {
-                    setDepartment(e.target.value as Department);
-                    setStaffId("");
-                  }}
-                >
-                  {Object.entries(departmentLabels).map(([id, label]) => (
-                    <option value={id} key={id}>
-                      {label}
-                    </option>
+          <div className="admin-weekbar">
+            <label>
+              დეპარტამენტი
+              <select
+                value={department}
+                onChange={e => {
+                  setDepartment(e.target.value as Department);
+                  setStaffId("");
+                }}
+              >
+                {Object.entries(departmentLabels).map(([id, label]) => (
+                  <option value={id} key={id}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="admin-weeknav">
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="წინა კვირა"
+                onClick={() => moveWeek(-1)}
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <div>
+                <b>
+                  {weekDays[0].toLocaleDateString("ka-GE", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                  {" – "}
+                  {weekDays[6].toLocaleDateString("ka-GE", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </b>
+                <span>{roster.length} თანამშრომელი</span>
+              </div>
+              <button
+                type="button"
+                className="today-button"
+                onClick={() => setDate(restaurantToday())}
+              >
+                დღეს
+              </button>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="შემდეგი კვირა"
+                onClick={() => moveWeek(1)}
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+          {shifts.isLoading ? (
+            <div className="loading-card" />
+          ) : shifts.isError ? (
+            <div className="error-banner">
+              განრიგი ვერ ჩაიტვირთა.{" "}
+              <button type="button" onClick={() => shifts.refetch()}>
+                ხელახლა ცდა
+              </button>
+            </div>
+          ) : roster.length === 0 ? (
+            <EmptyState
+              title="თანამშრომლები არ არის"
+              description="ამ დეპარტამენტში ჯერ არავინ არის ჩაწერილი."
+            />
+          ) : (
+            <div className="admin-board-wrap">
+              <table className="admin-board">
+                <thead>
+                  <tr>
+                    <th>თანამშრომელი</th>
+                    {weekDays.map(dayDate => {
+                      const key = dateKey(dayDate);
+                      return (
+                        <th
+                          key={key}
+                          className={key === restaurantToday() ? "is-today" : ""}
+                        >
+                          {dayDate.toLocaleDateString("ka-GE", {
+                            weekday: "short",
+                          })}
+                          <small>{dayDate.getDate()}</small>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {roster.map(member => (
+                    <tr key={member.id}>
+                      <th>{member.name}</th>
+                      {weekKeys.map(key => {
+                        const shift = shifts.data?.find(
+                          item =>
+                            item.name === member.name &&
+                            item.department === department &&
+                            item.date === key
+                        );
+                        const working = isWorking(shift?.time);
+                        const selected = person?.id === member.id && date === key;
+                        return (
+                          <td key={key}>
+                            <button
+                              type="button"
+                              className={`admin-cell${working ? " working" : ""}${selected ? " selected" : ""}${key === restaurantToday() ? " today" : ""}`}
+                              aria-pressed={selected}
+                              aria-label={`${member.name}, ${key}, ${shift?.time ?? "OFF"}`}
+                              onClick={() => {
+                                setStaffId(member.id);
+                                setDate(key);
+                              }}
+                            >
+                              <strong>
+                                {working ? prettyTime(shift?.time ?? "") : "OFF"}
+                              </strong>
+                              {shift?.position ? <small>{shift.position}</small> : null}
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
                   ))}
-                </select>
-              </label>
+                </tbody>
+              </table>
+            </div>
+          )}
+          <form onSubmit={submit} className="admin-edit-form">
+            <div className="section-title">
+              <h2>
+                {person
+                  ? `${person.name} · ${new Date(`${date}T12:00:00`).toLocaleDateString("ka-GE", { weekday: "long", day: "numeric", month: "long" })}`
+                  : "ცვლის რედაქტირება"}
+              </h2>
+            </div>
+            <div className="admin-form-grid">
               <label>
                 თანამშრომელი
                 <select
@@ -265,17 +429,7 @@ export default function Admin() {
               <label>
                 დაწყების დრო
                 <select value={time} onChange={e => setTime(e.target.value)}>
-                  {[
-                    ...new Set([
-                      "OFF",
-                      "9:00",
-                      "10:00",
-                      "14:00",
-                      "15:00",
-                      "18:00",
-                      time,
-                    ]),
-                  ].map(t => (
+                  {timeChoices.map(t => (
                     <option value={t} key={t}>
                       {t === "OFF" ? "OFF — ცვლის გარეშე" : prettyTime(t)}
                     </option>
@@ -325,7 +479,7 @@ export default function Admin() {
                 type="submit"
                 disabled={
                   save.isPending ||
-                  shifts.isFetching ||
+                  (!shifts.data && shifts.isFetching) ||
                   shifts.isError ||
                   !person
                 }
@@ -349,6 +503,7 @@ export default function Admin() {
           </div>
         </section>
       )}
+      {tab === "employees" && <EmployeeManager />}
       {tab === "requests" && (
         <section className="requests-panel">
           <div className="section-title">

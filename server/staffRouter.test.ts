@@ -84,7 +84,7 @@ describe("staff authorization and swap validation", () => {
       { id: 1, name: "Staff A" },
       { id: 2, name: "Staff B" },
     ]);
-    for (let i = 0; i < 4; i++) mock.mockResolvedValueOnce([]);
+    for (let i = 0; i < 5; i++) mock.mockResolvedValueOnce([]);
     await expect(
       caller().createSwap({
         ...input,
@@ -105,7 +105,7 @@ describe("staff authorization and swap validation", () => {
       { id: 1, name: "Staff A" },
       { id: 2, name: "Staff B" },
     ]);
-    for (let i = 0; i < 4; i++) mock.mockResolvedValueOnce([]);
+    for (let i = 0; i < 5; i++) mock.mockResolvedValueOnce([]);
     await expect(
       caller().createSwap({
         ...input,
@@ -135,7 +135,7 @@ describe("staff authorization and swap validation", () => {
       { id: 1, name: "Staff A" },
       { id: 2, name: "Staff B" },
     ]);
-    for (let i = 0; i < 4; i++) mock.mockResolvedValueOnce([]);
+    for (let i = 0; i < 5; i++) mock.mockResolvedValueOnce([]);
     mock.mockResolvedValue([]);
     await expect(caller().createSwap(input)).rejects.toMatchObject({
       code: "CONFLICT",
@@ -143,6 +143,20 @@ describe("staff authorization and swap validation", () => {
     expect(mock.mock.calls.some(call => call[2]?.method === "POST")).toBe(
       false
     );
+  });
+  it("hides switched-off employees from the roster", async () => {
+    mock.mockImplementation(async table => {
+      if (table === "waiters")
+        return [
+          { id: 1, name: "Staff A" },
+          { id: 2, name: "Staff B" },
+        ];
+      if (table === "tiflisi_staff_status")
+        return [{ staff_id: "waiters:2" }];
+      return [];
+    });
+    const roster = await caller(null).roster();
+    expect(roster.map(person => person.name)).toEqual(["Staff A"]);
   });
   it("writes a pending request only after verifying both real shifts", async () => {
     mock.mockImplementation(async (table, _query, options) => {
