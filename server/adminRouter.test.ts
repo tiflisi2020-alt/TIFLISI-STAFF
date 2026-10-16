@@ -21,7 +21,7 @@ const manager: User = {
   updatedAt: new Date(),
   lastSignedIn: new Date(),
 };
-const caller = (user: User | null = manager) =>
+const caller = (user: TrpcContext["user"] = manager) =>
   adminRouter.createCaller({
     user,
     req: {} as TrpcContext["req"],
@@ -63,6 +63,15 @@ describe("admin controls", () => {
       }).updateShift(input)
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mock).not.toHaveBeenCalled();
+  });
+  it("permits an administrators-department account", async () => {
+    mock.mockResolvedValue([]);
+    await caller({
+      ...manager,
+      email: "admin.dept@example.com",
+      department: "administrators",
+    }).requests({ status: "pending", page: 0 });
+    expect(mock).toHaveBeenCalled();
   });
   it("permits the exact manager to page requests", async () => {
     mock.mockResolvedValue([]);

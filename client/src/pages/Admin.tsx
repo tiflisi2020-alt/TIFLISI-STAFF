@@ -24,6 +24,7 @@ import {
   mondayOf,
   prettyTime,
   restaurantToday,
+  type DepartmentId,
 } from "@shared/schedule";
 import {
   EmptyState,
@@ -33,7 +34,7 @@ import {
 import { getLoginHref } from "@/const";
 import { EmployeeManager } from "@/components/staff/EmployeeManager";
 
-type Department = "waiters" | "chefs" | "cleaners" | "cashiers" | "hostesses";
+type Department = DepartmentId;
 type Status = "pending" | "approved" | "rejected" | "all";
 const statusLabels: Record<string, string> = {
   pending: "მოლოდინში",
@@ -101,6 +102,16 @@ export default function Admin() {
     enabled: !!isAdmin,
     retry: false,
   });
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    if (
+      requested === "schedule" ||
+      requested === "employees" ||
+      requested === "requests" ||
+      requested === "accounts"
+    )
+      setTab(requested);
+  }, []);
   useEffect(() => {
     setTime(current?.time ?? "OFF");
     setPosition(current?.position ?? "");
@@ -187,6 +198,13 @@ export default function Admin() {
         staffId: selected.id,
       });
   };
+  const shiftFor = (name: string, key: string) =>
+    shifts.data?.find(
+      item =>
+        item.name === name &&
+        item.department === department &&
+        item.date === key
+    );
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!person || !shifts.data || shifts.isError) return;
@@ -245,7 +263,11 @@ export default function Admin() {
           className={tab === "requests" ? "active" : ""}
           onClick={() => setTab("requests")}
         >
-          <Check size={16} /> გაცვლის მოთხოვნები
+          <Check size={16} /> დადასტურება
+          {status === "pending" &&
+            page === 0 &&
+            !!requests.data?.length &&
+            ` · ${Math.min(requests.data.length, 20)}`}
         </button>
         <button
           className={tab === "accounts" ? "active" : ""}
@@ -254,6 +276,28 @@ export default function Admin() {
           <Link2 size={16} /> ანგარიშები
         </button>
       </div>
+      {tab !== "requests" &&
+        status === "pending" &&
+        page === 0 &&
+        !!requests.data?.length && (
+          <div className="info-banner confirm-banner">
+            <Check size={19} />
+            <div>
+              <b>ჩანაცვლება ელოდება დადასტურებას</b>
+              <p>
+                ღილაკი აქვე, ჩანართ „დადასტურებაშია“. დამტკიცების შემდეგ
+                ისვენებს კოლეგა ცვლაზე ჩაჯდება.
+              </p>
+            </div>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() => setTab("requests")}
+            >
+              დადასტურება
+            </button>
+          </div>
+        )}
       {tab === "schedule" && (
         <section className="manager-panel">
           <div className="section-title">
@@ -338,6 +382,61 @@ export default function Admin() {
               description="ამ დეპარტამენტში ჯერ არავინ არის ჩაწერილი."
             />
           ) : (
+            <>
+            <div className="admin-phone-board">
+              <div className="admin-phone-days">
+                {weekDays.map(dayDate => {
+                  const key = dateKey(dayDate);
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`admin-phone-day${date === key ? " selected" : ""}${key === restaurantToday() ? " is-today" : ""}`}
+                      aria-pressed={date === key}
+                      onClick={() => setDate(key)}
+                    >
+                      <span>
+                        {dayDate.toLocaleDateString("ka-GE", {
+                          weekday: "short",
+                        })}
+                      </span>
+                      <b>{dayDate.getDate()}</b>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="admin-phone-caption">
+                {new Date(`${date}T12:00:00`).toLocaleDateString("ka-GE", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                })}
+              </p>
+              <div className="admin-phone-list">
+                {roster.map(member => {
+                  const shift = shiftFor(member.name, date);
+                  const working = isWorking(shift?.time);
+                  const selected = person?.id === member.id;
+                  return (
+                    <button
+                      key={member.id}
+                      type="button"
+                      className={`admin-phone-person${working ? " working" : ""}${selected ? " selected" : ""}`}
+                      aria-pressed={selected}
+                      onClick={() => setStaffId(member.id)}
+                    >
+                      <b>{member.name}</b>
+                      <span>
+                        <strong>
+                          {working ? prettyTime(shift?.time ?? "") : "OFF"}
+                        </strong>
+                        {shift?.position ? <small>{shift.position}</small> : null}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div className="admin-board-wrap">
               <table className="admin-board">
                 <thead>
@@ -364,12 +463,7 @@ export default function Admin() {
                     <tr key={member.id}>
                       <th>{member.name}</th>
                       {weekKeys.map(key => {
-                        const shift = shifts.data?.find(
-                          item =>
-                            item.name === member.name &&
-                            item.department === department &&
-                            item.date === key
-                        );
+                        const shift = shiftFor(member.name, key);
                         const working = isWorking(shift?.time);
                         const selected = person?.id === member.id && date === key;
                         return (
@@ -397,6 +491,7 @@ export default function Admin() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
           <form onSubmit={submit} className="admin-edit-form">
             <div className="section-title">

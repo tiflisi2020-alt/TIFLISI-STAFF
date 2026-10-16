@@ -13,6 +13,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { useStaff } from "@/contexts/StaffContext";
 import { Avatar, GeorgianDate } from "./Shared";
 import { prettyTime, restaurantDate } from "@shared/schedule";
@@ -46,11 +47,44 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { staff, selected, selectStaff, auth, roster } = useStaff();
   const [notifications, setNotifications] = useState(false);
   const [selector, setSelector] = useState(false);
+  const utils = trpc.useUtils();
   const notices = trpc.staff.notices.useQuery(undefined, {
     enabled: !!auth.user,
     retry: false,
     refetchInterval: 20000,
   });
+  const refreshAfterDecision = async () => {
+    await Promise.all([
+      utils.staff.notices.invalidate(),
+      utils.staff.incoming.invalidate(),
+      utils.staff.requests.invalidate(),
+      utils.staff.shifts.invalidate(),
+      utils.admin.requests.invalidate(),
+    ]);
+  };
+  const respond = trpc.staff.respondSwap.useMutation({
+    onSuccess: async (_data, variables) => {
+      toast.success(
+        variables.status === "approved"
+          ? "დაადასტურე. ეს ცვლა ახლა შენია."
+          : "მოთხოვნა უარყოფილია."
+      );
+      await refreshAfterDecision();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const reviewRequest = trpc.admin.reviewRequest.useMutation({
+    onSuccess: async (_data, variables) => {
+      toast.success(
+        variables.status === "approved"
+          ? "ჩანაცვლება დადასტურდა."
+          : "მოთხოვნა უარყოფილია."
+      );
+      await refreshAfterDecision();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const deciding = respond.isPending || reviewRequest.isPending;
   const isManager = auth.user?.role === "admin";
   const weekAgo = Date.now() - 7 * 86400000;
   const review = isManager ? (notices.data?.review ?? []) : [];
@@ -220,36 +254,70 @@ export default function Layout({ children }: { children: ReactNode }) {
           ) : (
             <div className="notice-list">
               {review.map(item => (
-                <Link
-                  key={`review-${item.id}`}
-                  href="/admin"
-                  className="notice-item"
-                  onClick={() => setNotifications(false)}
-                >
+                <div key={`review-${item.id}`} className="notice-item">
                   <b>
                     {item.requester_name} → {item.target_name}
                   </b>
                   <span>
-                    ჩანაცვლება ელოდება დამტკიცებას ·{" "}
+                    დადასტურება გელოდება ·{" "}
                     <GeorgianDate date={item.own_date} short /> ·{" "}
                     {prettyTime(item.own_time)}
                   </span>
-                </Link>
+                  <div className="notice-actions">
+                    <button
+                      type="button"
+                      className="notice-confirm"
+                      disabled={deciding}
+                      onClick={() =>
+                        reviewRequest.mutate({ id: item.id, status: "approved" })
+                      }
+                    >
+                      <Check size={14} /> დადასტურება
+                    </button>
+                    <button
+                      type="button"
+                      className="notice-decline"
+                      disabled={deciding}
+                      onClick={() =>
+                        reviewRequest.mutate({ id: item.id, status: "rejected" })
+                      }
+                    >
+                      უარყოფა
+                    </button>
+                  </div>
+                </div>
               ))}
               {incoming.map(item => (
-                <Link
-                  key={`in-${item.id}`}
-                  href="/profile"
-                  className="notice-item"
-                  onClick={() => setNotifications(false)}
-                >
+                <div key={`in-${item.id}`} className="notice-item">
                   <b>{item.requester_name} გთხოვს ჩანაცვლებას</b>
                   <span>
                     მის ნაცვლად გამოსვლა ·{" "}
                     <GeorgianDate date={item.own_date} short /> ·{" "}
                     {prettyTime(item.own_time)}
                   </span>
-                </Link>
+                  <div className="notice-actions">
+                    <button
+                      type="button"
+                      className="notice-confirm"
+                      disabled={deciding}
+                      onClick={() =>
+                        respond.mutate({ id: item.id, status: "approved" })
+                      }
+                    >
+                      <Check size={14} /> ვადასტურებ
+                    </button>
+                    <button
+                      type="button"
+                      className="notice-decline"
+                      disabled={deciding}
+                      onClick={() =>
+                        respond.mutate({ id: item.id, status: "rejected" })
+                      }
+                    >
+                      უარს ვამბობ
+                    </button>
+                  </div>
+                </div>
               ))}
               {outgoing.map(item => (
                 <Link

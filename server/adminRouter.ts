@@ -1,16 +1,11 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, router } from "./_core/trpc";
+import { departmentIds } from "../shared/schedule";
 import { departments, supabase, type Department } from "./supabase";
 import { exchangeShifts, getStaff, type SwapRow } from "./staffRouter";
 
-const department = z.enum([
-  "waiters",
-  "chefs",
-  "cleaners",
-  "cashiers",
-  "hostesses",
-]);
+const department = z.enum(departmentIds);
 const date = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -400,6 +395,7 @@ export const adminRouter = router({
             department: null,
             staff_name: null,
             staff_id: null,
+            role: "user",
             updated_at: new Date().toISOString(),
           },
         }

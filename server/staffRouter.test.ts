@@ -84,7 +84,7 @@ describe("staff authorization and swap validation", () => {
       { id: 1, name: "Staff A" },
       { id: 2, name: "Staff B" },
     ]);
-    for (let i = 0; i < 5; i++) mock.mockResolvedValueOnce([]);
+    for (let i = 0; i < 6; i++) mock.mockResolvedValueOnce([]);
     await expect(
       caller().createSwap({
         ...input,
@@ -105,7 +105,7 @@ describe("staff authorization and swap validation", () => {
       { id: 1, name: "Staff A" },
       { id: 2, name: "Staff B" },
     ]);
-    for (let i = 0; i < 5; i++) mock.mockResolvedValueOnce([]);
+    for (let i = 0; i < 6; i++) mock.mockResolvedValueOnce([]);
     await expect(
       caller().createSwap({
         ...input,
@@ -135,7 +135,7 @@ describe("staff authorization and swap validation", () => {
       { id: 1, name: "Staff A" },
       { id: 2, name: "Staff B" },
     ]);
-    for (let i = 0; i < 5; i++) mock.mockResolvedValueOnce([]);
+    for (let i = 0; i < 6; i++) mock.mockResolvedValueOnce([]);
     mock.mockResolvedValue([]);
     await expect(caller().createSwap(input)).rejects.toMatchObject({
       code: "CONFLICT",
@@ -300,6 +300,41 @@ describe("staff authorization and swap validation", () => {
     });
     expect(mock.mock.calls.some(call => call[2]?.method === "POST")).toBe(
       false
+    );
+  });
+  it("lets only the asked colleague reject a cover", async () => {
+    const id = "d0b3f5c1-7aca-4dcf-9484-47e908c68cdd";
+    mock.mockResolvedValueOnce([{ department: null, staff_name: null }]);
+    await expect(
+      caller().respondSwap({ id, status: "rejected" })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    mock.mockResolvedValueOnce([
+      { department: "waiters", staff_name: "Staff C" },
+    ]);
+    mock.mockResolvedValueOnce([]);
+    await expect(
+      caller().respondSwap({ id, status: "approved" })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    mock.mockResolvedValueOnce([
+      { department: "waiters", staff_name: "Staff B" },
+    ]);
+    mock.mockResolvedValueOnce([
+      {
+        id,
+        department: "waiters",
+        requester_name: "Staff A",
+        target_name: "Staff B",
+        status: "pending",
+      },
+    ]);
+    mock.mockResolvedValueOnce([{ id, status: "rejected" }]);
+    await expect(
+      caller().respondSwap({ id, status: "rejected" })
+    ).resolves.toEqual({ success: true });
+    expect(mock).toHaveBeenCalledWith(
+      "tiflisi_swap_requests",
+      `id=eq.${id}&status=eq.pending&department=eq.waiters&target_name=eq.Staff%20B`,
+      { method: "PATCH", body: { status: "rejected" } }
     );
   });
   it("cancels only the caller's pending request", async () => {

@@ -13,12 +13,22 @@ export type Shift = {
   position: string;
   notes: string;
 };
-export const departmentLabels: Record<string, string> = {
+export const departmentIds = [
+  "waiters",
+  "chefs",
+  "cleaners",
+  "cashiers",
+  "hostesses",
+  "administrators",
+] as const;
+export type DepartmentId = (typeof departmentIds)[number];
+export const departmentLabels: Record<DepartmentId, string> = {
   waiters: "მიმტანები",
   chefs: "სამზარეულო",
   cleaners: "დასუფთავება",
   cashiers: "მოლარეები",
   hostesses: "ჰოსტესები",
+  administrators: "ადმინისტრაცია",
 };
 export function isWorking(time: string | null | undefined) {
   return Boolean(

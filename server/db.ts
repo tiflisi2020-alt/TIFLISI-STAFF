@@ -1,6 +1,6 @@
 import type { InsertUser, User } from "../drizzle/schema";
 import { supabase, type AccountRow, type Department } from "./supabase";
-import { isManagerIdentity } from "./manager";
+import { accountRole } from "./manager";
 
 export type StaffAccount = User & {
   department: Department | null;
@@ -16,7 +16,7 @@ function asUser(row: AccountRow): StaffAccount {
     name: row.name,
     email: row.email,
     loginMethod: row.login_method,
-    role: row.role,
+    role: accountRole(row.email, row.department),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
     lastSignedIn: new Date(row.last_signed_in),
@@ -49,7 +49,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (user.lastSignedIn !== undefined) body.last_signed_in = user.lastSignedIn;
   // Email comes only from trusted provider identity or an existing server-only row.
   const email = user.email === undefined ? existing?.email : user.email;
-  body.role = isManagerIdentity(email) ? "admin" : "user";
+  body.role = accountRole(email, existing?.department);
   if (existing) {
     await supabase("tiflisi_accounts", `id=eq.${existing.id}`, {
       method: "PATCH",

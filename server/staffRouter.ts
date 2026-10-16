@@ -6,7 +6,7 @@ import {
   publicProcedure,
   router,
 } from "./_core/trpc";
-import { isManagerIdentity } from "./manager";
+import { ADMIN_DEPARTMENT, hasAdminAccess, isManagerIdentity } from "./manager";
 import {
   departments,
   supabase,
@@ -14,19 +14,14 @@ import {
   type Department,
 } from "./supabase";
 import {
+  departmentIds,
   isWorking,
   restaurantToday,
   type Shift,
   type Staff,
 } from "../shared/schedule";
 
-const departmentEnum = z.enum([
-  "waiters",
-  "chefs",
-  "cleaners",
-  "cashiers",
-  "hostesses",
-]);
+const departmentEnum = z.enum(departmentIds);
 const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -55,6 +50,8 @@ export type SwapRow = {
   status: "pending" | "approved" | "rejected" | "cancelled";
   created_at: string;
 };
+const swapFields =
+  "id,requester_id,department,requester_name,own_date,own_time,target_name,target_date,target_time,reason,status,created_at";
 
 export async function getStaff(): Promise<Staff[]> {
   const [batches, inactive] = await Promise.all([
@@ -405,6 +402,15 @@ export const staffRouter = router({
           message:
             "დეპარტამენტში ერთნაირი სახელებია. ჯერ გაასწორეთ თანამშრომლების ჩანაწერები.",
         });
+      const current = await supabase<Pick<AccountRow, "email">[]>(
+        "tiflisi_accounts",
+        `select=email&id=eq.${input.accountId}&limit=1`
+      );
+      if (!current[0])
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "ანგარიში ვერ მოიძებნა.",
+        });
       const rows = await supabase<AccountRow[]>(
         "tiflisi_accounts",
         `id=eq.${input.accountId}`,
@@ -414,6 +420,11 @@ export const staffRouter = router({
             department: input.department,
             staff_name: selected.name,
             staff_id: selected.id,
+            role:
+              input.department === ADMIN_DEPARTMENT ||
+              isManagerIdentity(current[0].email)
+                ? "admin"
+                : "user",
             updated_at: new Date().toISOString(),
           },
         }
@@ -431,9 +442,19 @@ export const staffRouter = router({
       `select=id,requester_id,department,requester_name,own_date,own_time,target_name,target_date,target_time,reason,status,created_at&requester_id=eq.${ctx.user.id}&order=created_at.desc&limit=50`
     )
   ),
+  incoming: protectedProcedure.query(async ({ ctx }) => {
+    const accounts = await supabase<AccountRow[]>(
+      "tiflisi_accounts",
+      `select=department,staff_name&id=eq.${ctx.user.id}&limit=1`
+    );
+    const account = accounts[0];
+    if (!account?.staff_name || !account.department) return [];
+    return supabase<SwapRow[]>(
+      "tiflisi_swap_requests",
+      `select=${swapFields}&department=eq.${account.department}&target_name=eq.${encodeURIComponent(account.staff_name)}&status=eq.pending&order=created_at.desc&limit=20`
+    );
+  }),
   notices: protectedProcedure.query(async ({ ctx }) => {
-    const fields =
-      "id,requester_id,department,requester_name,own_date,own_time,target_name,target_date,target_time,reason,status,created_at";
     const accounts = await supabase<AccountRow[]>(
       "tiflisi_accounts",
       `select=department,staff_name&id=eq.${ctx.user.id}&limit=1`
@@ -443,20 +464,20 @@ export const staffRouter = router({
       account?.staff_name && account.department
         ? supabase<SwapRow[]>(
             "tiflisi_swap_requests",
-            `select=${fields}&department=eq.${account.department}&target_name=eq.${encodeURIComponent(account.staff_name)}&status=eq.pending&order=created_at.desc&limit=8`
+            `select=${swapFields}&department=eq.${account.department}&target_name=eq.${encodeURIComponent(account.staff_name)}&status=eq.pending&order=created_at.desc&limit=8`
           )
         : Promise.resolve([] as SwapRow[]);
     const review =
-      ctx.user.role === "admin" && isManagerIdentity(ctx.user.email)
+      hasAdminAccess(ctx.user)
         ? supabase<SwapRow[]>(
             "tiflisi_swap_requests",
-            `select=${fields}&status=eq.pending&order=created_at.desc&limit=8`
+            `select=${swapFields}&status=eq.pending&order=created_at.desc&limit=8`
           )
         : Promise.resolve([] as SwapRow[]);
     const [outgoing, asked, pending] = await Promise.all([
       supabase<SwapRow[]>(
         "tiflisi_swap_requests",
-        `select=${fields}&requester_id=eq.${ctx.user.id}&status=in.(pending,approved,rejected)&order=created_at.desc&limit=8`
+        `select=${swapFields}&requester_id=eq.${ctx.user.id}&status=in.(pending,approved,rejected)&order=created_at.desc&limit=8`
       ),
       incoming,
       review,
@@ -598,6 +619,71 @@ export const staffRouter = router({
         },
       });
       return rows[0];
+    }),
+  respondSwap: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        status: z.enum(["approved", "rejected"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const accounts = await supabase<AccountRow[]>(
+        "tiflisi_accounts",
+        `select=department,staff_name&id=eq.${ctx.user.id}&limit=1`
+      );
+      const account = accounts[0];
+      if (!account?.staff_name || !account.department)
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "ანგარიში თანამშრომელთან არ არის დაკავშირებული.",
+        });
+      const mine = `department=eq.${account.department}&target_name=eq.${encodeURIComponent(account.staff_name)}`;
+      const pending = await supabase<SwapRow[]>(
+        "tiflisi_swap_requests",
+        `select=${swapFields}&id=eq.${input.id}&status=eq.pending&${mine}&limit=1`
+      );
+      const request = pending[0];
+      if (!request)
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "ეს მოთხოვნა შენ არ გეკუთვნის ან უკვე განხილულია.",
+        });
+      if (input.status === "rejected") {
+        const rows = await supabase<SwapRow[]>(
+          "tiflisi_swap_requests",
+          `id=eq.${input.id}&status=eq.pending&${mine}`,
+          { method: "PATCH", body: { status: "rejected" } }
+        );
+        if (rows.length !== 1)
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "მოთხოვნა უკვე განხილულია ან ვერ მოიძებნა.",
+          });
+        return { success: true };
+      }
+      const undo = await exchangeShifts(request);
+      const rows = await supabase<SwapRow[]>(
+        "tiflisi_swap_requests",
+        `id=eq.${input.id}&status=eq.pending`,
+        { method: "PATCH", body: { status: "approved" } }
+      );
+      if (rows.length !== 1) {
+        try {
+          await undo();
+        } catch {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message:
+              "მოთხოვნა პარალელურად განიხილეს და განრიგის დაბრუნება ვერ შესრულდა. გადაამოწმე ორივე ცვლა.",
+          });
+        }
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "მოთხოვნა პარალელურად განიხილეს. განრიგი უკან დაბრუნდა.",
+        });
+      }
+      return { success: true };
     }),
   cancelSwap: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))

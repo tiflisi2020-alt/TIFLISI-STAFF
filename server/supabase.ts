@@ -64,6 +64,12 @@ export const departments = {
     shifts: "hostess_positions",
     nameColumn: "hostess_name",
   },
+  administrators: {
+    label: "ადმინისტრაცია",
+    role: "ადმინისტრატორი",
+    shifts: "administrator_positions",
+    nameColumn: "administrator_name",
+  },
 } as const;
 export type Department = keyof typeof departments;
 export type AccountRow = {

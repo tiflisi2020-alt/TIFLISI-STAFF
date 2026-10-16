@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Pencil, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { departmentLabels } from "@shared/schedule";
+import { departmentLabels, type DepartmentId } from "@shared/schedule";
 import { EmptyState } from "@/components/staff/Shared";
 
-type Department = "waiters" | "chefs" | "cleaners" | "cashiers" | "hostesses";
+type Department = DepartmentId;
 
 export function EmployeeManager() {
   const utils = trpc.useUtils();

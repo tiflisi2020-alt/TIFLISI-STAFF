@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   CalendarDays,
+  Check,
   CheckCircle2,
   Clock3,
   Link2,
@@ -8,13 +9,19 @@ import {
   LogOut,
   ShieldCheck,
   UserRound,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import { useStaff } from "@/contexts/StaffContext";
 import { trpc } from "@/lib/trpc";
 import { getLoginHref } from "@/const";
-import { departmentLabels, isWorking, prettyTime } from "@shared/schedule";
+import {
+  departmentLabels,
+  isWorking,
+  prettyTime,
+  type DepartmentId,
+} from "@shared/schedule";
 import {
   Avatar,
   EmptyState,
@@ -35,6 +42,10 @@ export default function Profile() {
     enabled: !!auth.user,
     retry: false,
   });
+  const incoming = trpc.staff.incoming.useQuery(undefined, {
+    enabled: !!auth.user,
+    retry: false,
+  });
   const accounts = trpc.staff.accounts.useQuery(undefined, {
     enabled: auth.user?.role === "admin",
     retry: false,
@@ -52,6 +63,23 @@ export default function Profile() {
     onSuccess: async () => {
       toast.success("მოთხოვნა გაუქმდა.");
       await utils.staff.requests.invalidate();
+      await utils.staff.notices.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const respond = trpc.staff.respondSwap.useMutation({
+    onSuccess: async (_data, variables) => {
+      toast.success(
+        variables.status === "approved"
+          ? "დაადასტურე. ეს ცვლა ახლა შენია, კოლეგა კი ისვენებს."
+          : "მოთხოვნა უარყოფილია."
+      );
+      await Promise.all([
+        utils.staff.incoming.invalidate(),
+        utils.staff.notices.invalidate(),
+        utils.staff.requests.invalidate(),
+        utils.staff.shifts.invalidate(),
+      ]);
     },
     onError: error => toast.error(error.message),
   });
@@ -72,12 +100,7 @@ export default function Profile() {
     if (s && id)
       link.mutate({
         accountId: id,
-        department: s.department as
-          | "waiters"
-          | "chefs"
-          | "cleaners"
-          | "cashiers"
-          | "hostesses",
+        department: s.department as DepartmentId,
         staffId: s.id,
       });
   };
@@ -275,6 +298,64 @@ export default function Profile() {
           </div>
           {accounts.isError && (
             <p className="form-error">ანგარიშების სია ვერ ჩაიტვირთა.</p>
+          )}
+        </section>
+      )}
+      {!!auth.user && (
+        <section className="requests-panel">
+          <div className="section-title">
+            <h2>დადასტურება</h2>
+            <span className="tag">შენ გთხოვენ</span>
+          </div>
+          {incoming.isLoading ? (
+            <div className="loading-card" />
+          ) : incoming.isError ? (
+            <div className="error-banner">
+              მოთხოვნები ვერ ჩაიტვირთა.{" "}
+              <button onClick={() => incoming.refetch()}>ხელახლა ცდა</button>
+            </div>
+          ) : incoming.data?.length ? (
+            <div className="request-list">
+              {incoming.data.map(r => (
+                <article className="request-row" key={r.id}>
+                  <div>
+                    <b>
+                      {r.requester_name} გთხოვს, გამახვიდე ნაცვლად
+                    </b>
+                    <p>
+                      <GeorgianDate date={r.own_date} /> ·{" "}
+                      {prettyTime(r.own_time)}
+                    </p>
+                    <small>{r.reason}</small>
+                  </div>
+                  <div className="request-actions">
+                    <button
+                      className="primary-button"
+                      onClick={() =>
+                        respond.mutate({ id: r.id, status: "approved" })
+                      }
+                      disabled={respond.isPending}
+                    >
+                      <Check size={15} /> ვადასტურებ
+                    </button>
+                    <button
+                      className="secondary-button reject-button"
+                      onClick={() =>
+                        respond.mutate({ id: r.id, status: "rejected" })
+                      }
+                      disabled={respond.isPending}
+                    >
+                      <X size={15} /> უარს ვამბობ
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="დასადასტურებელი არაფერია"
+              description="როცა კოლეგა შენს ნაცვლად გამოსვლას გთხოვს, ღილაკები აქ და ზარის შეტყობინებაში გამოჩნდება."
+            />
           )}
         </section>
       )}

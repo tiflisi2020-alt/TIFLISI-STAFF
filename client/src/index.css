@@ -965,6 +965,34 @@ select:focus {
   line-height: 1.6;
   color: #5C4034;
 }
+.notice-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.notice-actions button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 7px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.notice-confirm {
+  background: #8B3A2A;
+  color: #FBF6F1;
+}
+.notice-decline {
+  background: transparent;
+  border: 1px solid #C4785A;
+  color: #6B2E24;
+}
+.notice-actions button:disabled {
+  opacity: 0.6;
+}
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1487,6 +1515,14 @@ select:focus {
 .info-banner a {
   color: var(--primary);
   text-decoration: underline;
+}
+.confirm-banner {
+  align-items: center;
+}
+.confirm-banner .primary-button {
+  margin-left: auto;
+  flex: none;
+  white-space: nowrap;
 }
 .profile-grid {
   display: grid;
@@ -2804,6 +2840,9 @@ select:focus {
   font-size: 10px;
   color: #5C4034;
 }
+.admin-phone-board {
+  display: none;
+}
 .admin-board-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -3057,6 +3096,112 @@ select:focus {
     font-size: 8px;
     padding: 8px;
     gap: 4px;
+  }
+  .admin-board-wrap {
+    display: none;
+  }
+  .admin-phone-board {
+    display: block;
+  }
+  .admin-phone-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .admin-phone-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 54px;
+    padding: 6px 0;
+    border-radius: 10px;
+    background: #F7EFE8;
+    color: #6E5248;
+  }
+  .admin-phone-day span {
+    font-size: 8px;
+    line-height: 1.2;
+  }
+  .admin-phone-day b {
+    font-size: 16px;
+    color: #2A1814;
+  }
+  .admin-phone-day.is-today b {
+    color: #8B3A2A;
+  }
+  .admin-phone-day.selected {
+    background: #8B3A2A;
+    color: #FBF6F1;
+  }
+  .admin-phone-day.selected b,
+  .admin-phone-day.selected.is-today b {
+    color: #FBF6F1;
+  }
+  .admin-phone-caption {
+    margin: 14px 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2A1814;
+  }
+  .admin-phone-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .admin-phone-person {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-height: 56px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #F7EFE8;
+    color: #6E5248;
+    text-align: left;
+  }
+  .admin-phone-person b {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2A1814;
+    line-height: 1.35;
+  }
+  .admin-phone-person > span {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex: none;
+  }
+  .admin-phone-person strong {
+    font-size: 15px;
+  }
+  .admin-phone-person small {
+    font-size: 11px;
+  }
+  .admin-phone-person.working {
+    background: #F4E0D2;
+    color: #8B3A2A;
+  }
+  .admin-phone-person.working b {
+    color: #2A1814;
+  }
+  .admin-phone-person.selected {
+    box-shadow: inset 0 0 0 2px #8B3A2A;
+  }
+  .confirm-banner {
+    flex-wrap: wrap;
+  }
+  .confirm-banner .primary-button {
+    margin-left: 0;
+    width: 100%;
+  }
+  .admin-edit-form .section-title h2 {
+    min-width: 0;
+    line-height: 1.45;
   }
   .admin-weekbar,
   .admin-weeknav {

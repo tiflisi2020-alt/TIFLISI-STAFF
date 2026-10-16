@@ -2,7 +2,7 @@ import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from "../../shared/const";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
-import { isManagerIdentity } from "../manager";
+import { hasAdminAccess } from "../manager";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -32,9 +32,7 @@ export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    // A stale role cannot grant access without the owner-selected confirmed identity.
-    const trustedManager = ctx.user && isManagerIdentity(ctx.user.email);
-    if (!ctx.user || ctx.user.role !== "admin" || !trustedManager) {
+    if (!hasAdminAccess(ctx.user)) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 

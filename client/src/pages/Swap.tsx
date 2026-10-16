@@ -10,7 +10,12 @@ import {
 import { toast } from "sonner";
 import { useStaff } from "@/contexts/StaffContext";
 import { trpc } from "@/lib/trpc";
-import { isWorking, prettyTime, type Shift } from "@shared/schedule";
+import {
+  isWorking,
+  prettyTime,
+  type DepartmentId,
+  type Shift,
+} from "@shared/schedule";
 import { Avatar, GeorgianDate, PageHeading } from "@/components/staff/Shared";
 
 export default function Swap() {
@@ -71,12 +76,7 @@ export default function Swap() {
     if (reason.trim().length < 10)
       return toast.error("მიზეზი მინიმუმ 10 სიმბოლოს უნდა შეიცავდეს.");
     mutation.mutate({
-      department: myStaff.department as
-        | "waiters"
-        | "chefs"
-        | "cleaners"
-        | "cashiers"
-        | "hostesses",
+      department: myStaff.department as DepartmentId,
       own: { name: own.name, date: own.date, time: own.time },
       target: {
         name: cover.name,
@@ -274,8 +274,9 @@ export default function Swap() {
                 : "მოთხოვნის გაგზავნა"}
             </button>
             <p className="form-footnote">
-              მოთხოვნა განრიგს მაშინვე არ ცვლის. დამტკიცების შემდეგ კოლეგა
-              გამოდის შენს ნაცვლად.
+              მოთხოვნა განრიგს მაშინვე არ ცვლის. კოლეგა ზარში ან პროფილში
+              დაადასტურებს, რომ გამოვა შენს ნაცვლად. მენეჯერსაც შეუძლია
+              დაადასტუროს.
             </p>
           </form>
           <aside className="swap-guide">
@@ -300,8 +301,8 @@ export default function Swap() {
             <div>
               <span>03</span>
               <p>
-                <b>მენეჯერი ამტკიცებს</b>კოლეგა შენს ცვლას იღებს, შენ კი იმ დღეს
-                ისვენებ.
+                <b>კოლეგა ადასტურებს</b>ზარში ან პროფილის „დადასტურებაში“.
+                მენეჯერსაც შეუძლია იგივე ღილაკი დააჭიროს.
               </p>
             </div>
             <div className="guide-note">

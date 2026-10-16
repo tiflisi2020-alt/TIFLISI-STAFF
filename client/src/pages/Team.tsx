@@ -1,7 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { ArrowUpRight, Search, Users } from "lucide-react";
-import { departmentLabels, isWorking, prettyTime } from "@shared/schedule";
+import {
+  departmentIds,
+  departmentLabels,
+  isWorking,
+  prettyTime,
+} from "@shared/schedule";
 import { useStaff } from "@/contexts/StaffContext";
 import { Avatar, EmptyState, PageHeading } from "@/components/staff/Shared";
 
@@ -23,7 +28,7 @@ export default function Team() {
       <PageHeading
         eyebrow="ტიფლისის ადამიანები"
         title="ჩვენი გუნდი"
-        description={`${staff.length} თანამშრომელი · 5 დეპარტამენტი · ერთი გუნდი`}
+        description={`${staff.length} თანამშრომელი · ${departmentIds.length} დეპარტამენტი · ერთი გუნდი`}
         action={
           <span className="team-count-badge">
             <Users size={17} /> გუნდის წევრები
