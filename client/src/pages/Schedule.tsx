@@ -49,7 +49,7 @@ export default function Schedule() {
         description="ყველა ცვლა ერთ სივრცეში — დაგეგმე შენი კვირა."
         action={
           <Link href="/swap" className="primary-button">
-            <ArrowLeftRight size={18} /> ცვლის გაცვლა
+            <ArrowLeftRight size={18} /> ჩანაცვლება
           </Link>
         }
       />

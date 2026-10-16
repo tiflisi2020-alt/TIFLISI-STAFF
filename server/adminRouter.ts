@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { adminProcedure, router } from "./_core/trpc";
 import { departments, supabase, type Department } from "./supabase";
-import { getStaff, type SwapRow } from "./staffRouter";
+import { exchangeShifts, getStaff, type SwapRow } from "./staffRouter";
 
 const department = z.enum([
   "waiters",
@@ -75,16 +75,50 @@ export const adminRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const rows = await supabase<SwapRow[]>(
+      if (input.status === "rejected") {
+        const rows = await supabase<SwapRow[]>(
+          "tiflisi_swap_requests",
+          `id=eq.${input.id}&status=eq.pending`,
+          { method: "PATCH", body: { status: "rejected" } }
+        );
+        if (rows.length !== 1)
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "მოთხოვნა უკვე განხილულია ან ვერ მოიძებნა. განაახლეთ სია.",
+          });
+        return { success: true };
+      }
+      const pending = await supabase<SwapRow[]>(
         "tiflisi_swap_requests",
-        `id=eq.${input.id}&status=eq.pending`,
-        { method: "PATCH", body: { status: input.status } }
+        `select=${fields}&id=eq.${input.id}&status=eq.pending&limit=1`
       );
-      if (rows.length !== 1)
+      const request = pending[0];
+      if (!request)
         throw new TRPCError({
           code: "CONFLICT",
           message: "მოთხოვნა უკვე განხილულია ან ვერ მოიძებნა. განაახლეთ სია.",
         });
+      const undo = await exchangeShifts(request);
+      const rows = await supabase<SwapRow[]>(
+        "tiflisi_swap_requests",
+        `id=eq.${input.id}&status=eq.pending`,
+        { method: "PATCH", body: { status: "approved" } }
+      );
+      if (rows.length !== 1) {
+        try {
+          await undo();
+        } catch {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message:
+              "მოთხოვნა პარალელურად განიხილეს და განრიგის დაბრუნება ვერ შესრულდა. გადაამოწმე ორივე ცვლა.",
+          });
+        }
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "მოთხოვნა პარალელურად განიხილეს. განრიგი უკან დაბრუნდა.",
+        });
+      }
       return { success: true };
     }),
   updateShift: adminProcedure

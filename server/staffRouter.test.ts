@@ -34,7 +34,7 @@ const date = tomorrow.toISOString().slice(0, 10);
 const input = {
   department: "waiters" as const,
   own: { name: "Staff A", date, time: "14:00" },
-  target: { name: "Staff B", date, time: "9:00" },
+  target: { name: "Staff B", date, time: "OFF" },
   reason: "მნიშვნელოვანი პირადი მიზეზი",
 };
 
@@ -186,15 +186,18 @@ describe("staff authorization and swap validation", () => {
           {
             waiter_name: "Staff B",
             shift_date: date,
-            shift_time: "9:00",
-            position: "H",
+            shift_time: "OFF",
+            position: "",
             notes: "",
           },
         ];
-      if (table === "tiflisi_swap_requests")
-        return [
-          { id: "request", status: "pending", ...(options?.body as object) },
-        ];
+      if (table === "tiflisi_swap_requests") {
+        if (options?.method === "POST")
+          return [
+            { id: "request", status: "pending", ...(options.body as object) },
+          ];
+        return [];
+      }
       return [];
     });
     const result = await caller().createSwap(input);
@@ -205,5 +208,113 @@ describe("staff authorization and swap validation", () => {
     expect(mock.mock.calls.find(call => call[2]?.method === "POST")?.[0]).toBe(
       "tiflisi_swap_requests"
     );
+  });
+  it("rejects a second pending request for the same shift", async () => {
+    mock.mockImplementation(async (table, _query, options) => {
+      if (table === "tiflisi_accounts")
+        return [
+          {
+            id: 1,
+            department: "waiters",
+            staff_name: "Staff A",
+            staff_id: "waiters:1",
+          },
+        ];
+      if (table === "waiters")
+        return [
+          { id: 1, name: "Staff A" },
+          { id: 2, name: "Staff B" },
+        ];
+      if (table === "waiter_positions")
+        return [
+          {
+            waiter_name: "Staff A",
+            shift_date: date,
+            shift_time: "14:00",
+            position: "A",
+            notes: "",
+          },
+          {
+            waiter_name: "Staff B",
+            shift_date: date,
+            shift_time: "OFF",
+            position: "",
+            notes: "",
+          },
+        ];
+      if (table === "tiflisi_swap_requests" && !options?.method)
+        return [
+          {
+            requester_name: "Staff A",
+            own_date: date,
+            target_name: "Staff C",
+            target_date: date,
+          },
+        ];
+      return [];
+    });
+    await expect(caller().createSwap(input)).rejects.toMatchObject({
+      code: "CONFLICT",
+    });
+    expect(mock.mock.calls.some(call => call[2]?.method === "POST")).toBe(
+      false
+    );
+  });
+  it("rejects a colleague who is already working that day", async () => {
+    mock.mockImplementation(async table => {
+      if (table === "tiflisi_accounts")
+        return [
+          {
+            id: 1,
+            department: "waiters",
+            staff_name: "Staff A",
+            staff_id: "waiters:1",
+          },
+        ];
+      if (table === "waiters")
+        return [
+          { id: 1, name: "Staff A" },
+          { id: 2, name: "Staff B" },
+        ];
+      if (table === "waiter_positions")
+        return [
+          {
+            waiter_name: "Staff A",
+            shift_date: date,
+            shift_time: "14:00",
+            position: "",
+            notes: "",
+          },
+          {
+            waiter_name: "Staff B",
+            shift_date: date,
+            shift_time: "9:00",
+            position: "",
+            notes: "",
+          },
+        ];
+      return [];
+    });
+    await expect(caller().createSwap(input)).rejects.toMatchObject({
+      code: "CONFLICT",
+    });
+    expect(mock.mock.calls.some(call => call[2]?.method === "POST")).toBe(
+      false
+    );
+  });
+  it("cancels only the caller's pending request", async () => {
+    mock.mockResolvedValueOnce([{ id: "d0b3f5c1-7aca-4dcf-9484-47e908c68cdd" }]);
+    await expect(
+      caller().cancelSwap({ id: "d0b3f5c1-7aca-4dcf-9484-47e908c68cdd" })
+    ).resolves.toEqual({ success: true });
+    expect(mock).toHaveBeenCalledWith(
+      "tiflisi_swap_requests",
+      "id=eq.d0b3f5c1-7aca-4dcf-9484-47e908c68cdd&requester_id=eq.1&status=eq.pending",
+      { method: "PATCH", body: { status: "cancelled" } }
+    );
+    mock.mockResolvedValueOnce([]);
+    await expect(
+      caller().cancelSwap({ id: "d0b3f5c1-7aca-4dcf-9484-47e908c68cdd" })
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 });

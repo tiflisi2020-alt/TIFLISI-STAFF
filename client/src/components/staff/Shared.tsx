@@ -81,7 +81,7 @@ export function ShiftCard({
       {shift.notes && <p className="shift-note">{shift.notes}</p>}
       {onSwap && (
         <button className="swap-card-button" onClick={onSwap}>
-          <ArrowRight size={15} /> ცვლის გაცვლა
+          <ArrowRight size={15} /> ჩანაცვლება
         </button>
       )}
     </article>

@@ -3,6 +3,7 @@ import type { TrpcContext } from "./_core/context";
 import type { User } from "../drizzle/schema";
 import { adminRouter } from "./adminRouter";
 import { supabase } from "./supabase";
+import { addDays, dateKey, restaurantDate } from "../shared/schedule";
 vi.mock("./supabase", async () => {
   const actual =
     await vi.importActual<typeof import("./supabase")>("./supabase");
@@ -71,17 +72,121 @@ describe("admin controls", () => {
       expect.stringContaining("limit=21&offset=20")
     );
   });
-  it("updates only a pending request status, never the schedule", async () => {
-    mock.mockResolvedValue([{ id: "r", status: "approved" }]);
+  it("rejects a request without changing the schedule", async () => {
+    mock.mockResolvedValue([{ id: "r", status: "rejected" }]);
     await caller().reviewRequest({
       id: "d0b3f5c1-7aca-4dcf-9484-47e908c68cdd",
-      status: "approved",
+      status: "rejected",
     });
     expect(mock).toHaveBeenCalledTimes(1);
     expect(mock).toHaveBeenCalledWith(
       "tiflisi_swap_requests",
       expect.stringContaining("status=eq.pending"),
-      { method: "PATCH", body: { status: "approved" } }
+      { method: "PATCH", body: { status: "rejected" } }
+    );
+  });
+  it("gives the shift to the resting colleague when a cover is approved", async () => {
+    const day = dateKey(addDays(restaurantDate(), 4));
+    const id = "d0b3f5c1-7aca-4dcf-9484-47e908c68cdd";
+    const request = {
+      id,
+      requester_id: 1,
+      department: "waiters",
+      requester_name: "Staff A",
+      own_date: day,
+      own_time: "14:00",
+      target_name: "Staff B",
+      target_date: day,
+      target_time: "OFF",
+      reason: "მნიშვნელოვანი პირადი მიზეზი",
+      status: "pending",
+      created_at: "2026-10-16T00:00:00.000Z",
+    };
+    mock.mockImplementation(async (table, query, options) => {
+      const text = String(query ?? "");
+      if (table === "tiflisi_swap_requests") {
+        if (options?.method === "PATCH")
+          return [{ ...request, status: "approved" }];
+        return [request];
+      }
+      if (table === "waiters")
+        return [
+          { id: 1, name: "Staff A" },
+          { id: 2, name: "Staff B" },
+        ];
+      if (table === "waiter_positions") {
+        if (options?.method === "POST" || options?.method === "PATCH")
+          return [{ id: "shift" }];
+        if (text.includes(encodeURIComponent("Staff A")))
+          return [{ shift_time: "14:00", position: "Hall", notes: "a" }];
+        return [];
+      }
+      return [];
+    });
+    await caller().reviewRequest({ id, status: "approved" });
+    const post = mock.mock.calls.find(call => call[2]?.method === "POST");
+    const patches = mock.mock.calls.filter(call => call[2]?.method === "PATCH");
+    expect(post?.[0]).toBe("waiter_positions");
+    expect(post?.[2]?.body).toEqual({
+      waiter_name: "Staff B",
+      shift_date: day,
+      shift_time: "14:00",
+      position: "Hall",
+      notes: "a",
+    });
+    expect(patches.map(call => call[0])).toEqual([
+      "waiter_positions",
+      "tiflisi_swap_requests",
+    ]);
+    expect(patches[0][1]).toContain(encodeURIComponent("Staff A"));
+    expect(patches[0][2]?.body).toEqual({
+      shift_time: "OFF",
+      position: "",
+      notes: "",
+    });
+    expect(patches[1][2]?.body).toEqual({ status: "approved" });
+  });
+  it("does not approve a request after the schedule changed", async () => {
+    const day = dateKey(addDays(restaurantDate(), 4));
+    const id = "d0b3f5c1-7aca-4dcf-9484-47e908c68cdd";
+    mock.mockImplementation(async (table, query) => {
+      const text = String(query ?? "");
+      if (table === "tiflisi_swap_requests")
+        return [
+          {
+            id,
+            requester_id: 1,
+            department: "waiters",
+            requester_name: "Staff A",
+            own_date: day,
+            own_time: "14:00",
+            target_name: "Staff B",
+            target_date: day,
+            target_time: "OFF",
+            reason: "მნიშვნელოვანი პირადი მიზეზი",
+            status: "pending",
+            created_at: "2026-10-16T00:00:00.000Z",
+          },
+        ];
+      if (table === "waiters")
+        return [
+          { id: 1, name: "Staff A" },
+          { id: 2, name: "Staff B" },
+        ];
+      if (
+        table === "waiter_positions" &&
+        text.includes(encodeURIComponent("Staff A"))
+      )
+        return [{ shift_time: "10:00", position: "", notes: "" }];
+      if (table === "waiter_positions")
+        return [{ shift_time: "09:00", position: "", notes: "" }];
+      return [];
+    });
+    await expect(
+      caller().reviewRequest({ id, status: "approved" })
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(mock.mock.calls.some(call => call[2]?.method === "PATCH")).toBe(
+      false
     );
   });
   it("rejects a request already reviewed", async () => {

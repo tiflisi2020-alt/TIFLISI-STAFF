@@ -48,6 +48,13 @@ export default function Profile() {
       s.department === person?.department &&
       isWorking(s.time)
   );
+  const cancel = trpc.staff.cancelSwap.useMutation({
+    onSuccess: async () => {
+      toast.success("მოთხოვნა გაუქმდა.");
+      await utils.staff.requests.invalidate();
+    },
+    onError: error => toast.error(error.message),
+  });
   const link = trpc.staff.linkAccount.useMutation({
     onSuccess: async () => {
       toast.success("ანგარიში თანამშრომელთან დაკავშირებულია.");
@@ -294,15 +301,23 @@ export default function Profile() {
                     <GeorgianDate date={r.own_date} /> ·{" "}
                     {prettyTime(r.own_time)}
                   </b>
-                  <p>
-                    {r.target_name} · <GeorgianDate date={r.target_date} /> ·{" "}
-                    {prettyTime(r.target_time)}
-                  </p>
+                  <p>{r.target_name} გამოვა ნაცვლად</p>
                   <small>{r.reason}</small>
                 </div>
-                <span className={`request-status status-${r.status}`}>
-                  {statuses[r.status]}
-                </span>
+                <div className="request-actions">
+                  <span className={`request-status status-${r.status}`}>
+                    {statuses[r.status]}
+                  </span>
+                  {r.status === "pending" && (
+                    <button
+                      className="request-cancel"
+                      onClick={() => cancel.mutate({ id: r.id })}
+                      disabled={cancel.isPending}
+                    >
+                      გაუქმება
+                    </button>
+                  )}
+                </div>
               </article>
             ))}
           </div>

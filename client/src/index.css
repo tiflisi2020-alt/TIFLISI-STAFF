@@ -1697,6 +1697,36 @@ select:focus {
   font-weight: 600;
   margin-top: 18px;
 }
+.swap-result {
+  border-radius: 10px;
+  background: #F6E6DA;
+  border: 1px solid #E4CBBC;
+  padding: 14px 16px;
+  margin-top: 4px;
+}
+.swap-result b {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.swap-result p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #5C4034;
+}
+.request-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.request-cancel {
+  background: transparent;
+  color: #8B3A2A;
+  font-size: 11px;
+  padding: 0;
+  text-decoration: underline;
+}
 .swap-direction {
   display: flex;
   justify-content: center;

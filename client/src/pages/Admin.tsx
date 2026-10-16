@@ -124,11 +124,16 @@ export default function Admin() {
     onError: e => toast.error(e.message),
   });
   const review = trpc.admin.reviewRequest.useMutation({
-    onSuccess: async () => {
-      toast.success("მოთხოვნის სტატუსი განახლდა.");
+    onSuccess: async (_data, variables) => {
+      toast.success(
+        variables.status === "approved"
+          ? "კოლეგა ცვლაზე ჩაჯდა, მომთხოვნი კი დაისვენებს."
+          : "მოთხოვნა უარყოფილია."
+      );
       await Promise.all([
         utils.admin.requests.invalidate(),
         utils.staff.requests.invalidate(),
+        utils.staff.shifts.invalidate(),
       ]);
     },
     onError: e => toast.error(e.message),
@@ -525,10 +530,11 @@ export default function Admin() {
           </div>
           <div className="info-banner">
             <div>
-              <b>დამტკიცება მხოლოდ მოთხოვნის სტატუსს ცვლის</b>
+              <b>დამტკიცება ცვლას ისვენებს კოლეგას გადასცემს</b>
               <p>
-                ცვლები ავტომატურად არ იცვლება. შეთანხმებული ცვლილებები შეიტანე
-                „განრიგის მართვის“ ფორმაში ორივე თანამშრომლისთვის.
+                მომთხოვნი იმ დღეს თავისუფლდება, ნაცვლად კი ის კოლეგა გამოდის,
+                რომელიც ისვენებდა. თუ კოლეგამ უკვე დაიწყო მუშაობა ან ცვლა
+                შეიცვალა, მოთხოვნა მოლოდინში რჩება. უარყოფა განრიგს არ ეხება.
               </p>
             </div>
           </div>
@@ -545,7 +551,7 @@ export default function Admin() {
                 <article className="admin-request" key={r.id}>
                   <div className="admin-request-top">
                     <b>
-                      {r.requester_name} → {r.target_name}
+                      {r.requester_name} → {r.target_name} გამოვა ნაცვლად
                     </b>
                     <span className={`request-status status-${r.status}`}>
                       {statusLabels[r.status]}
@@ -553,9 +559,7 @@ export default function Admin() {
                   </div>
                   <p>
                     <GeorgianDate date={r.own_date} /> ·{" "}
-                    {prettyTime(r.own_time)} ⇄{" "}
-                    <GeorgianDate date={r.target_date} /> ·{" "}
-                    {prettyTime(r.target_time)}
+                    {prettyTime(r.own_time)}
                   </p>
                   <p className="muted">{r.reason}</p>
                   {r.status === "pending" && (

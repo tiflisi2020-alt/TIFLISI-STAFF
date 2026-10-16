@@ -110,6 +110,229 @@ export async function getShifts(from: string, to: string): Promise<Shift[]> {
 
 const todayTbilisi = restaurantToday;
 
+type ShiftCell = {
+  exists: boolean;
+  time: string | null;
+  position: string | null;
+  notes: string | null;
+};
+type ShiftWrite = {
+  time: string | null;
+  position: string | null;
+  notes: string | null;
+};
+
+function fieldFilter(column: string, value: string | null) {
+  return value === null
+    ? `${column}=is.null`
+    : `${column}=eq.${encodeURIComponent(value)}`;
+}
+
+async function readCell(
+  department: Department,
+  name: string,
+  date: string
+): Promise<ShiftCell> {
+  const config = departments[department];
+  const rows = await supabase<Record<string, string | null>[]>(
+    config.shifts,
+    `select=shift_time,position,notes&${config.nameColumn}=eq.${encodeURIComponent(name)}&shift_date=eq.${date}&limit=2`
+  );
+  if (rows.length > 1)
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "ამ თარიღზე დუბლირებული ჩანაწერებია. გაცვლა არ შესრულდა.",
+    });
+  const row = rows[0];
+  if (!row) return { exists: false, time: null, position: null, notes: null };
+  return {
+    exists: true,
+    time: row.shift_time,
+    position: row.position,
+    notes: row.notes,
+  };
+}
+
+async function writeCell(
+  department: Department,
+  name: string,
+  date: string,
+  before: ShiftCell,
+  after: ShiftWrite
+) {
+  const config = departments[department];
+  const identity = `${config.nameColumn}=eq.${encodeURIComponent(name)}&shift_date=eq.${date}`;
+  if (!before.exists) {
+    const created = await supabase<unknown[]>(config.shifts, "", {
+      method: "POST",
+      body: {
+        [config.nameColumn]: name,
+        shift_date: date,
+        shift_time: after.time,
+        position: after.position ?? "",
+        notes: after.notes ?? "",
+      },
+    });
+    if (!Array.isArray(created) || created.length !== 1)
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "ცვლის ჩაწერა ვერ შესრულდა.",
+      });
+    return;
+  }
+  const updated = await supabase<unknown[]>(
+    config.shifts,
+    `${identity}&${fieldFilter("shift_time", before.time)}&${fieldFilter("position", before.position)}&${fieldFilter("notes", before.notes)}`,
+    {
+      method: "PATCH",
+      body: {
+        shift_time: after.time,
+        position: after.position ?? "",
+        notes: after.notes ?? "",
+      },
+    }
+  );
+  if (updated.length !== 1)
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "ცვლა პარალელურად შეიცვალა. განაახლეთ მოთხოვნა.",
+    });
+}
+
+async function undoCell(
+  department: Department,
+  name: string,
+  date: string,
+  before: ShiftCell,
+  after: ShiftWrite
+) {
+  const config = departments[department];
+  if (!before.exists) {
+    await supabase(
+      config.shifts,
+      `${config.nameColumn}=eq.${encodeURIComponent(name)}&shift_date=eq.${date}&${fieldFilter("shift_time", after.time)}&${fieldFilter("position", after.position)}&${fieldFilter("notes", after.notes)}`,
+      { method: "DELETE" }
+    );
+    return;
+  }
+  await writeCell(
+    department,
+    name,
+    date,
+    { exists: true, ...after },
+    before
+  );
+}
+
+function asWrite(cell: ShiftCell): ShiftWrite {
+  return { time: cell.time, position: cell.position, notes: cell.notes };
+}
+
+export async function exchangeShifts(request: SwapRow) {
+  const roster = await getStaff();
+  for (const name of [request.requester_name, request.target_name]) {
+    if (
+      roster.filter(
+        person =>
+          person.department === request.department && person.name === name
+      ).length !== 1
+    )
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "თანამშრომელი აღარ არის აქტიური ან ჩანაწერი ორაზროვანია.",
+      });
+  }
+  if (request.own_date < todayTbilisi())
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "გასული ცვლის ჩანაცვლება შეუძლებელია.",
+    });
+  if (request.own_date !== request.target_date)
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "ჩანაცვლება მხოლოდ იმავე დღეს ხდება.",
+    });
+  const own = await readCell(
+    request.department,
+    request.requester_name,
+    request.own_date
+  );
+  const target = await readCell(
+    request.department,
+    request.target_name,
+    request.own_date
+  );
+  if ((own.time ?? "OFF") !== request.own_time || !isWorking(own.time))
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "განრიგი შეიცვალა. მოთხოვნა ვერ დამტკიცდება, სანამ ცვლა არ განახლდება.",
+    });
+  if (isWorking(target.time) || (target.time ?? "OFF") !== request.target_time)
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "კოლეგა ამ დღეს უკვე მუშაობს ან მისი დასვენება შეიცვალა.",
+    });
+  const clear: ShiftWrite = { time: "OFF", position: "", notes: "" };
+  const steps: {
+    name: string;
+    date: string;
+    before: ShiftCell;
+    after: ShiftWrite;
+  }[] = [
+    {
+      name: request.target_name,
+      date: request.own_date,
+      before: target,
+      after: asWrite(own),
+    },
+    {
+      name: request.requester_name,
+      date: request.own_date,
+      before: own,
+      after: clear,
+    },
+  ];
+  const done: typeof steps = [];
+  const undo = async () => {
+    for (const step of [...done].reverse()) {
+      await undoCell(
+        request.department,
+        step.name,
+        step.date,
+        step.before,
+        step.after
+      );
+    }
+  };
+  try {
+    for (const step of steps) {
+      await writeCell(
+        request.department,
+        step.name,
+        step.date,
+        step.before,
+        step.after
+      );
+      done.push(step);
+    }
+  } catch (error) {
+    try {
+      await undo();
+    } catch {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "გაცვლა ვერ დასრულდა. გადაამოწმე ორივე თანამშრომლის განრიგი.",
+      });
+    }
+    if (error instanceof TRPCError) throw error;
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "გაცვლა ვერ შესრულდა. განრიგი უცვლელია.",
+    });
+  }
+  return undo;
+}
+
 export const staffRouter = router({
   roster: publicProcedure.query(getStaff),
   shifts: publicProcedure
@@ -257,40 +480,76 @@ export const staffRouter = router({
             message: "თანამშრომლის ჩანაწერი ორაზროვანია ან წაშლილია.",
           });
       }
-      if (input.own.date < todayTbilisi() || input.target.date < todayTbilisi())
+      if (input.own.date < todayTbilisi())
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "გასული ცვლის გაცვლა შეუძლებელია.",
+          message: "გასული ცვლის ჩანაცვლება შეუძლებელია.",
         });
       if (input.own.name === input.target.name)
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "აირჩიეთ სხვა თანამშრომელი.",
         });
-      const dates = [input.own.date, input.target.date].sort();
-      if ((Date.parse(dates[1]) - Date.parse(dates[0])) / 86400000 > 35)
+      if (input.own.date !== input.target.date)
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "ცვლები 35-დღიანი პერიოდის ფარგლებში უნდა იყოს.",
+          message: "ჩანაცვლება მხოლოდ იმავე დღეს ხდება.",
         });
-      const shifts = await getShifts(dates[0], dates[1]);
-      for (const selected of [input.own, input.target]) {
-        if (
-          !shifts.some(
-            shift =>
-              shift.department === input.department &&
-              shift.name === selected.name &&
-              shift.date === selected.date &&
-              shift.time === selected.time &&
-              isWorking(shift.time)
-          )
-        )
-          throw new TRPCError({
-            code: "CONFLICT",
-            message:
-              "განრიგი შეიცვალა. განაახლეთ გვერდი და თავიდან აირჩიეთ ცვლა.",
-          });
-      }
+      const shifts = await getShifts(input.own.date, input.own.date);
+      const inDepartment = shifts.filter(
+        shift => shift.department === input.department
+      );
+      const ownShift = inDepartment.find(
+        shift => shift.name === input.own.name && shift.date === input.own.date
+      );
+      if (
+        !ownShift ||
+        ownShift.time !== input.own.time ||
+        !isWorking(ownShift.time)
+      )
+        throw new TRPCError({
+          code: "CONFLICT",
+          message:
+            "განრიგი შეიცვალა. განაახლეთ გვერდი და თავიდან აირჩიეთ ცვლა.",
+        });
+      const coverShift = inDepartment.find(
+        shift =>
+          shift.name === input.target.name && shift.date === input.own.date
+      );
+      if (coverShift && isWorking(coverShift.time))
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "კოლეგა ამ დღეს უკვე მუშაობს და ვერ გამოვა ნაცვლად.",
+        });
+      const coverTime = coverShift?.time ?? "OFF";
+      if (input.target.time !== coverTime)
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "კოლეგის დასვენება შეიცვალა. თავიდან აირჩიეთ.",
+        });
+      const pending = await supabase<
+        Pick<
+          SwapRow,
+          "requester_name" | "own_date" | "target_name" | "target_date"
+        >[]
+      >(
+        "tiflisi_swap_requests",
+        `select=requester_name,own_date,target_name,target_date&department=eq.${input.department}&status=eq.pending&limit=500`
+      );
+      const locked = (name: string, date: string) =>
+        pending.some(
+          row =>
+            (row.requester_name === name && row.own_date === date) ||
+            (row.target_name === name && row.target_date === date)
+        );
+      if (
+        locked(input.own.name, input.own.date) ||
+        locked(input.target.name, input.target.date)
+      )
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "ამ ცვლაზე უკვე არის განუხილველი მოთხოვნა.",
+        });
       const rows = await supabase<SwapRow[]>("tiflisi_swap_requests", "", {
         method: "POST",
         body: {
@@ -306,5 +565,20 @@ export const staffRouter = router({
         },
       });
       return rows[0];
+    }),
+  cancelSwap: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const rows = await supabase<SwapRow[]>(
+        "tiflisi_swap_requests",
+        `id=eq.${input.id}&requester_id=eq.${ctx.user.id}&status=eq.pending`,
+        { method: "PATCH", body: { status: "cancelled" } }
+      );
+      if (rows.length !== 1)
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "მოთხოვნა უკვე განხილულია ან ვერ მოიძებნა.",
+        });
+      return { success: true };
     }),
 });

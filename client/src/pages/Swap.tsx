@@ -14,23 +14,42 @@ import { isWorking, prettyTime, type Shift } from "@shared/schedule";
 import { Avatar, GeorgianDate, PageHeading } from "@/components/staff/Shared";
 
 export default function Swap() {
-  const { auth, selected, myStaff, upcoming, today } = useStaff();
+  const { auth, selected, myStaff, staff, upcoming, today } = useStaff();
   const utils = trpc.useUtils();
   const [ownId, setOwnId] = useState("");
-  const [targetId, setTargetId] = useState("");
+  const [coverId, setCoverId] = useState("");
   const [reason, setReason] = useState("");
   const [sent, setSent] = useState(false);
   const person = myStaff ?? selected;
-  const shifts = (upcoming.data ?? []).filter(
-    s =>
-      s.date >= today &&
-      isWorking(s.time) &&
-      s.department === person?.department
+  const departmentShifts = (upcoming.data ?? []).filter(
+    shift => shift.date >= today && shift.department === person?.department
   );
-  const ownOptions = shifts.filter(s => s.name === person?.name);
-  const targets = shifts.filter(s => s.name !== person?.name);
-  const own = ownOptions.find(s => s.id === ownId);
-  const target = targets.find(s => s.id === targetId);
+  const ownOptions = departmentShifts.filter(
+    shift => shift.name === person?.name && isWorking(shift.time)
+  );
+  const own = ownOptions.find(shift => shift.id === ownId);
+  const covers = staff.filter(
+    colleague =>
+      colleague.department === person?.department &&
+      colleague.name !== person?.name &&
+      !departmentShifts.some(
+        shift =>
+          shift.name === colleague.name &&
+          shift.date === own?.date &&
+          isWorking(shift.time)
+      )
+  );
+  const cover = covers.find(colleague => colleague.id === coverId);
+  const coverShift = departmentShifts.find(
+    shift => shift.name === cover?.name && shift.date === own?.date
+  );
+  const shiftLabel = (shift: Shift) => {
+    const when = new Date(`${shift.date}T12:00:00`).toLocaleDateString(
+      "ka-GE",
+      { weekday: "short", day: "numeric", month: "short" }
+    );
+    return `${when} · ${prettyTime(shift.time)}`;
+  };
   useEffect(() => {
     const initialDate = new URLSearchParams(window.location.search).get("date");
     const first = ownOptions.find(s => s.date === initialDate) ?? ownOptions[0];
@@ -48,7 +67,7 @@ export default function Swap() {
     e.preventDefault();
     if (!auth.user || !myStaff)
       return toast.error("მოთხოვნისთვის საჭიროა დაკავშირებული ანგარიში.");
-    if (!own || !target) return toast.error("აირჩიე ორივე ცვლა.");
+    if (!own || !cover) return toast.error("აირჩიე შენი ცვლა და კოლეგა.");
     if (reason.trim().length < 10)
       return toast.error("მიზეზი მინიმუმ 10 სიმბოლოს უნდა შეიცავდეს.");
     mutation.mutate({
@@ -59,32 +78,13 @@ export default function Swap() {
         | "cashiers"
         | "hostesses",
       own: { name: own.name, date: own.date, time: own.time },
-      target: { name: target.name, date: target.date, time: target.time },
+      target: {
+        name: cover.name,
+        date: own.date,
+        time: coverShift && !isWorking(coverShift.time) ? coverShift.time : "OFF",
+      },
       reason: reason.trim(),
     });
-  }
-  function shiftPreview(shift: Shift | undefined, own: boolean) {
-    return (
-      <div className={`swap-preview ${own ? "own-preview" : "target-preview"}`}>
-        <span className="eyebrow">{own ? "შენი ცვლა" : "სასურველი ცვლა"}</span>
-        {shift ? (
-          <>
-            <div className="swap-preview-person">
-              <Avatar name={shift.name} size="small" />
-              <div>
-                <b>{shift.name}</b>
-                <span>
-                  <GeorgianDate date={shift.date} />
-                </span>
-              </div>
-            </div>
-            <h3>{prettyTime(shift.time)}</h3>
-          </>
-        ) : (
-          <p className="muted">ჯერ აირჩიე ცვლა</p>
-        )}
-      </div>
-    );
   }
   return (
     <>
@@ -93,16 +93,16 @@ export default function Swap() {
       </Link>
       <PageHeading
         eyebrow="მოქნილი სამუშაო რიტმი"
-        title="ცვლის გაცვლა"
-        description="აირჩიე ცვლა, მიუთითე მიზეზი და გააგზავნე მოთხოვნა."
+        title="ცვლის ჩანაცვლება"
+        description="ვინც მუშაობს, სთხოვს იმ კოლეგას, რომელიც იმ დღეს ისვენებს, რომ მის ნაცვლად გამოვიდეს."
       />
       {sent ? (
         <div className="success-panel">
           <CheckCircle2 size={52} />
           <h2>მოთხოვნა გაგზავნილია</h2>
           <p>
-            მოთხოვნა Supabase-ში შეინახა და განხილვის მოლოდინშია. განრიგი ჯერ არ
-            შეცვლილა.
+            მოთხოვნა განხილვის მოლოდინშია. სანამ მენეჯერი არ დაამტკიცებს, შენ
+            კვლავ ამ ცვლაზე ხარ.
           </p>
           <Link href="/profile" className="primary-button">
             ჩემი მოთხოვნების ნახვა
@@ -111,7 +111,7 @@ export default function Swap() {
             className="text-link"
             onClick={() => {
               setSent(false);
-              setTargetId("");
+              setCoverId("");
               setReason("");
             }}
           >
@@ -139,45 +139,96 @@ export default function Swap() {
               </div>
             )}
             <label>
-              შენი ცვლა{" "}
+              შენი სამუშაო დღე{" "}
               <select
                 value={ownId}
-                onChange={e => setOwnId(e.target.value)}
+                onChange={e => {
+                  setOwnId(e.target.value);
+                  setCoverId("");
+                }}
                 required
               >
                 <option value="">აირჩიე შენი ცვლა</option>
                 {ownOptions.map(s => (
                   <option value={s.id} key={s.id}>
-                    {s.date} · {prettyTime(s.time)}
+                    {shiftLabel(s)}
                   </option>
                 ))}
               </select>
             </label>
-            {shiftPreview(own, true)}
+            <div className="swap-preview own-preview">
+              <span className="eyebrow">შენ მუშაობ</span>
+              {own ? (
+                <>
+                  <div className="swap-preview-person">
+                    <Avatar name={own.name} size="small" />
+                    <div>
+                      <b>{own.name}</b>
+                      <span>
+                        <GeorgianDate date={own.date} />
+                      </span>
+                    </div>
+                  </div>
+                  <h3>{prettyTime(own.time)}</h3>
+                </>
+              ) : (
+                <p className="muted">ჯერ აირჩიე ცვლა</p>
+              )}
+            </div>
             <div className="swap-direction">
               <ArrowLeftRight size={19} />
             </div>
             <label>
-              ვისთან გსურს გაცვლა?{" "}
+              ვინ გამოვიდეს შენს ნაცვლად?{" "}
               <select
-                value={targetId}
-                onChange={e => setTargetId(e.target.value)}
+                value={coverId}
+                onChange={e => setCoverId(e.target.value)}
                 required
+                disabled={!own}
               >
-                <option value="">აირჩიე თანამშრომელი და ცვლა</option>
-                {targets.map(s => (
-                  <option value={s.id} key={s.id}>
-                    {s.name} · {s.date} · {prettyTime(s.time)}
-                  </option>
-                ))}
+                <option value="">
+                  {own ? "აირჩიე კოლეგა, რომელიც ისვენებს" : "ჯერ აირჩიე შენი ცვლა"}
+                </option>
+                {own &&
+                  covers.map(colleague => (
+                    <option value={colleague.id} key={colleague.id}>
+                      {colleague.name} · ისვენებს
+                    </option>
+                  ))}
               </select>
             </label>
-            {shiftPreview(target, false)}
+            <div className="swap-preview target-preview">
+              <span className="eyebrow">შენს ნაცვლად</span>
+              {cover && own ? (
+                <>
+                  <div className="swap-preview-person">
+                    <Avatar name={cover.name} size="small" />
+                    <div>
+                      <b>{cover.name}</b>
+                      <span>
+                        <GeorgianDate date={own.date} /> · ისვენებს
+                      </span>
+                    </div>
+                  </div>
+                  <h3>{prettyTime(own.time)}</h3>
+                </>
+              ) : (
+                <p className="muted">ჯერ აირჩიე კოლეგა</p>
+              )}
+            </div>
+            {own && cover && (
+              <div className="swap-result">
+                <b>დამტკიცების შემდეგ</b>
+                <p>
+                  {cover.name} გამოვა შენს ნაცვლად, {prettyTime(own.time)}-ზე.
+                  შენ ამ დღეს დაისვენებ.
+                </p>
+              </div>
+            )}
             <label>
-              გაცვლის მიზეზი{" "}
-              <span className="optional-label">მინ. 10 სიმბოლო</span>
+              მიზეზი <span className="optional-label">მინ. 10 სიმბოლო</span>
               <textarea
-                placeholder="მოკლედ აღწერე, რატომ გსურს ცვლის გაცვლა…"
+                placeholder="მოკლედ აღწერე, რატომ გჭირდება ჩანაცვლება…"
                 value={reason}
                 onChange={e => setReason(e.target.value)}
                 minLength={10}
@@ -200,6 +251,11 @@ export default function Swap() {
                 მომდევნო ოთხ კვირაში შენი ცვლა არ არის დაგეგმილი.
               </p>
             )}
+            {own && !covers.length && (
+              <p className="form-error">
+                ამ დღეს ყველა კოლეგა უკვე მუშაობს, ამიტომ ჩანაცვლება ვერ მოხდება.
+              </p>
+            )}
             <button
               className="primary-button full-width"
               type="submit"
@@ -207,7 +263,7 @@ export default function Swap() {
                 !auth.user ||
                 !myStaff ||
                 !own ||
-                !target ||
+                !cover ||
                 reason.trim().length < 10 ||
                 mutation.isPending
               }
@@ -218,38 +274,41 @@ export default function Swap() {
                 : "მოთხოვნის გაგზავნა"}
             </button>
             <p className="form-footnote">
-              მოთხოვნის გაგზავნა განრიგს ავტომატურად არ ცვლის.
+              მოთხოვნა განრიგს მაშინვე არ ცვლის. დამტკიცების შემდეგ კოლეგა
+              გამოდის შენს ნაცვლად.
             </p>
           </form>
           <aside className="swap-guide">
             <span className="guide-icon">
               <ArrowLeftRight size={26} />
             </span>
-            <h2>როგორ მუშაობს გაცვლა?</h2>
+            <h2>როგორ მუშაობს ჩანაცვლება?</h2>
             <div>
               <span>01</span>
               <p>
-                <b>აირჩიე შენი ცვლა</b>მხოლოდ მომავალი, შენთან დაკავშირებული
-                ცვლა.
+                <b>აირჩიე შენი სამუშაო დღე</b>მხოლოდ მომავალი ცვლა, რომელზეც შენ
+                მუშაობ.
               </p>
             </div>
             <div>
               <span>02</span>
               <p>
-                <b>იპოვე სასურველი ცვლა</b>აირჩიე კოლეგა იმავე დეპარტამენტიდან.
+                <b>აირჩიე ისვენებს კოლეგა</b>იმავე დეპარტამენტიდან, ვისაც ამ
+                დღეს ცვლა არ აქვს.
               </p>
             </div>
             <div>
               <span>03</span>
               <p>
-                <b>გააგზავნე მოთხოვნა</b>მოთხოვნა განხილვის მოლოდინში შეინახება.
+                <b>მენეჯერი ამტკიცებს</b>კოლეგა შენს ცვლას იღებს, შენ კი იმ დღეს
+                ისვენებ.
               </p>
             </div>
             <div className="guide-note">
               <Info size={17} />
               <p>
-                სტატუსის ნახვა პროფილში შეგიძლია. საბოლოო ცვლილებას მენეჯერი
-                არსებულ განრიგში ასახავს.
+                სანამ მოთხოვნა მოლოდინშია, განრიგი უცვლელია. უარყოფის ან
+                გაუქმების შემდეგ შენ კვლავ შენს ცვლაზე რჩები.
               </p>
             </div>
           </aside>
