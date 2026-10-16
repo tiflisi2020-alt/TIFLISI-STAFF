@@ -14,9 +14,10 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useStaff } from "@/contexts/StaffContext";
-import { Avatar } from "./Shared";
-import { restaurantDate } from "@shared/schedule";
+import { Avatar, GeorgianDate } from "./Shared";
+import { prettyTime, restaurantDate } from "@shared/schedule";
 import { getLoginHref } from "@/const";
+import { trpc } from "@/lib/trpc";
 
 const nav = [
   { path: "/", label: "მთავარი", icon: Home },
@@ -45,6 +46,23 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { staff, selected, selectStaff, auth, roster } = useStaff();
   const [notifications, setNotifications] = useState(false);
   const [selector, setSelector] = useState(false);
+  const notices = trpc.staff.notices.useQuery(undefined, {
+    enabled: !!auth.user,
+    retry: false,
+    refetchInterval: 20000,
+  });
+  const isManager = auth.user?.role === "admin";
+  const weekAgo = Date.now() - 7 * 86400000;
+  const review = isManager ? (notices.data?.review ?? []) : [];
+  const reviewIds = new Set(review.map(item => item.id));
+  const outgoing = (notices.data?.outgoing ?? []).filter(
+    item =>
+      !reviewIds.has(item.id) &&
+      (item.status === "pending" ||
+        new Date(item.created_at).getTime() >= weekAgo)
+  );
+  const incoming = isManager ? [] : (notices.data?.incoming ?? []);
+  const noticeCount = incoming.length + review.length + outgoing.length;
   return (
     <div className="app-layout">
       <aside className="sidebar">
@@ -139,10 +157,13 @@ export default function Layout({ children }: { children: ReactNode }) {
             <button
               className="icon-button notification-button"
               aria-label="შეტყობინებები"
-              onClick={() => setNotifications(!notifications)}
+              onClick={() => {
+                setNotifications(!notifications);
+                if (!notifications) notices.refetch();
+              }}
             >
               <Bell size={20} />
-              {auth.user && <span className="notification-dot" />}
+              {noticeCount > 0 && <span className="notification-dot" />}
             </button>
             <span className="header-divider" />
             <button
@@ -192,14 +213,66 @@ export default function Layout({ children }: { children: ReactNode }) {
               <X size={17} />
             </button>
           </div>
-          <p>გაცვლის მოთხოვნების სტატუსები პროფილში გამოჩნდება.</p>
-          <Link
-            href="/profile"
-            onClick={() => setNotifications(false)}
-            className="text-link"
-          >
-            პროფილის ნახვა <ArrowUpRight size={14} />
-          </Link>
+          {!auth.user ? (
+            <p>შეტყობინების სანახავად შედი ანგარიშში.</p>
+          ) : noticeCount === 0 ? (
+            <p>ახალი შეტყობინება არ არის.</p>
+          ) : (
+            <div className="notice-list">
+              {review.map(item => (
+                <Link
+                  key={`review-${item.id}`}
+                  href="/admin"
+                  className="notice-item"
+                  onClick={() => setNotifications(false)}
+                >
+                  <b>
+                    {item.requester_name} → {item.target_name}
+                  </b>
+                  <span>
+                    ჩანაცვლება ელოდება დამტკიცებას ·{" "}
+                    <GeorgianDate date={item.own_date} short /> ·{" "}
+                    {prettyTime(item.own_time)}
+                  </span>
+                </Link>
+              ))}
+              {incoming.map(item => (
+                <Link
+                  key={`in-${item.id}`}
+                  href="/profile"
+                  className="notice-item"
+                  onClick={() => setNotifications(false)}
+                >
+                  <b>{item.requester_name} გთხოვს ჩანაცვლებას</b>
+                  <span>
+                    მის ნაცვლად გამოსვლა ·{" "}
+                    <GeorgianDate date={item.own_date} short /> ·{" "}
+                    {prettyTime(item.own_time)}
+                  </span>
+                </Link>
+              ))}
+              {outgoing.map(item => (
+                <Link
+                  key={`out-${item.id}`}
+                  href="/profile"
+                  className="notice-item"
+                  onClick={() => setNotifications(false)}
+                >
+                  <b>
+                    {item.status === "approved"
+                      ? `${item.target_name} დამტკიცდა შენს ნაცვლად`
+                      : item.status === "rejected"
+                        ? "ჩანაცვლება უარყოფილია"
+                        : `${item.target_name} ელოდება დამტკიცებას`}
+                  </b>
+                  <span>
+                    <GeorgianDate date={item.own_date} short /> ·{" "}
+                    {prettyTime(item.own_time)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       )}
       {selector && (

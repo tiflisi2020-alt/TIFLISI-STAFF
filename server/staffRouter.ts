@@ -6,6 +6,7 @@ import {
   publicProcedure,
   router,
 } from "./_core/trpc";
+import { isManagerIdentity } from "./manager";
 import {
   departments,
   supabase,
@@ -430,6 +431,38 @@ export const staffRouter = router({
       `select=id,requester_id,department,requester_name,own_date,own_time,target_name,target_date,target_time,reason,status,created_at&requester_id=eq.${ctx.user.id}&order=created_at.desc&limit=50`
     )
   ),
+  notices: protectedProcedure.query(async ({ ctx }) => {
+    const fields =
+      "id,requester_id,department,requester_name,own_date,own_time,target_name,target_date,target_time,reason,status,created_at";
+    const accounts = await supabase<AccountRow[]>(
+      "tiflisi_accounts",
+      `select=department,staff_name&id=eq.${ctx.user.id}&limit=1`
+    );
+    const account = accounts[0];
+    const incoming =
+      account?.staff_name && account.department
+        ? supabase<SwapRow[]>(
+            "tiflisi_swap_requests",
+            `select=${fields}&department=eq.${account.department}&target_name=eq.${encodeURIComponent(account.staff_name)}&status=eq.pending&order=created_at.desc&limit=8`
+          )
+        : Promise.resolve([] as SwapRow[]);
+    const review =
+      ctx.user.role === "admin" && isManagerIdentity(ctx.user.email)
+        ? supabase<SwapRow[]>(
+            "tiflisi_swap_requests",
+            `select=${fields}&status=eq.pending&order=created_at.desc&limit=8`
+          )
+        : Promise.resolve([] as SwapRow[]);
+    const [outgoing, asked, pending] = await Promise.all([
+      supabase<SwapRow[]>(
+        "tiflisi_swap_requests",
+        `select=${fields}&requester_id=eq.${ctx.user.id}&status=in.(pending,approved,rejected)&order=created_at.desc&limit=8`
+      ),
+      incoming,
+      review,
+    ]);
+    return { outgoing, incoming: asked, review: pending };
+  }),
   createSwap: protectedProcedure
     .input(
       z.object({

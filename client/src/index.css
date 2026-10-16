@@ -936,7 +936,34 @@ select:focus {
   color: #5C4034;
   font-size: 11px;
   line-height: 1.9;
-  margin: 10px 0 15px;
+  margin: 10px 0 0;
+}
+.notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  max-height: 320px;
+  overflow: auto;
+}
+.notice-item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #F6E6DA;
+  color: #2A1814;
+}
+.notice-item b {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+}
+.notice-item span {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #5C4034;
 }
 .modal-backdrop {
   position: fixed;
