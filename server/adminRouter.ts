@@ -23,6 +23,25 @@ const fields =
   "id,requester_id,department,requester_name,own_date,own_time,target_name,target_date,target_time,reason,status,created_at";
 const personName = z.string().trim().min(1).max(120);
 const phoneField = z.string().trim().max(40);
+const announcementFields =
+  "id,title,body,kind,is_pinned,published_at,expires_at,created_at";
+type AdminAnnouncement = {
+  id: string;
+  title: string;
+  body: string;
+  kind: "info" | "urgent" | "schedule" | "event";
+  is_pinned: boolean;
+  published_at: string;
+  expires_at: string | null;
+  created_at: string;
+};
+const announcementInput = z.object({
+  title: z.string().trim().min(1).max(160),
+  body: z.string().trim().min(1).max(5000),
+  kind: z.enum(["info", "urgent", "schedule", "event"]),
+  isPinned: z.boolean(),
+  expiresAt: z.string().nullable(),
+});
 function rawStaffId(staffId: string, department: Department) {
   const prefix = `${department}:`;
   if (!staffId.startsWith(prefix)) return null;
@@ -47,6 +66,51 @@ async function uniqueName(department: Department, name: string, exceptId?: strin
 }
 
 export const adminRouter = router({
+  announcements: adminProcedure.query(() =>
+    supabase<AdminAnnouncement[]>(
+      "tiflisi_announcements",
+      `select=${announcementFields}&order=is_pinned.desc,published_at.desc&limit=50`
+    )
+  ),
+  createAnnouncement: adminProcedure
+    .input(announcementInput)
+    .mutation(async ({ ctx, input }) => {
+      const actorId = ctx.user?.id;
+      if (!actorId)
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "ავტორიზაცია საჭიროა." });
+      const rows = await supabase<unknown[]>("tiflisi_announcements", "", {
+        method: "POST",
+        body: {
+          title: input.title,
+          body: input.body,
+          kind: input.kind,
+          is_pinned: input.isPinned,
+          expires_at: input.expiresAt,
+          created_by: actorId,
+        },
+      });
+      if (!rows[0])
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "განცხადების გამოქვეყნება ვერ შესრულდა.",
+        });
+      return { success: true };
+    }),
+  archiveAnnouncement: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      const rows = await supabase<unknown[]>(
+        "tiflisi_announcements",
+        `id=eq.${input.id}`,
+        { method: "DELETE" }
+      );
+      if (rows.length !== 1)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "განცხადება ვერ მოიძებნა.",
+        });
+      return { success: true };
+    }),
   requests: adminProcedure
     .input(
       z.object({

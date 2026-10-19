@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CalendarDays,
   Check,
@@ -57,6 +57,21 @@ export default function Profile() {
     enabled: auth.user?.role === "admin",
     retry: false,
   });
+  const profile = trpc.staff.profile.useQuery(undefined, {
+    enabled: !!auth.user,
+    retry: false,
+  });
+  const [preferredName, setPreferredName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [bio, setBio] = useState("");
+  const [emergencyContact, setEmergencyContact] = useState("");
+  useEffect(() => {
+    if (!profile.data) return;
+    setPreferredName(profile.data.preferredName);
+    setPhone(profile.data.phone);
+    setBio(profile.data.bio);
+    setEmergencyContact(profile.data.emergencyContact);
+  }, [profile.data]);
   const [accountId, setAccountId] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const person = myStaff ?? selected;
@@ -98,6 +113,13 @@ export default function Profile() {
         utils.staff.account.invalidate(),
         utils.auth.me.invalidate(),
       ]);
+    },
+    onError: error => toast.error(error.message),
+  });
+  const saveProfile = trpc.staff.updateProfile.useMutation({
+    onSuccess: async () => {
+      toast.success("პროფილის ინფორმაცია შენახულია.");
+      await profile.refetch();
     },
     onError: error => toast.error(error.message),
   });
@@ -169,14 +191,19 @@ export default function Profile() {
           <div className="profile-cover" />
           <Avatar
             name={
-              myStaff?.name ?? auth.user?.name ?? selected?.name ?? "ტიფლისი"
+              profile.data?.preferredName ||
+              myStaff?.name ||
+              auth.user?.name ||
+              selected?.name ||
+              "ტიფლისი"
             }
             size="large"
           />
           <h2>
-            {myStaff?.name ??
-              auth.user?.name ??
-              selected?.name ??
+            {profile.data?.preferredName ||
+              myStaff?.name ||
+              auth.user?.name ||
+              selected?.name ||
               "თანამშრომელი"}
           </h2>
           <p>
@@ -243,6 +270,74 @@ export default function Profile() {
           </Link>
         </section>
       </div>
+      {auth.user && (
+        <section className="profile-editor">
+          <div className="section-title">
+            <div>
+              <h2>ჩემი პროფილის მორგება</h2>
+              <p>ეს ინფორმაცია მხოლოდ შენს ანგარიშში ინახება.</p>
+            </div>
+            <UserRound size={19} />
+          </div>
+          <div className="profile-editor-grid">
+            <label>
+              სასურველი სახელი
+              <input
+                value={preferredName}
+                onChange={event => setPreferredName(event.target.value)}
+                maxLength={80}
+                placeholder="როგორ მოგმართოთ"
+              />
+            </label>
+            <label>
+              ტელეფონი
+              <input
+                value={phone}
+                onChange={event => setPhone(event.target.value)}
+                maxLength={40}
+                placeholder="+995 5XX XX XX XX"
+              />
+            </label>
+            <label>
+              საგანგებო კონტაქტი
+              <input
+                value={emergencyContact}
+                onChange={event => setEmergencyContact(event.target.value)}
+                maxLength={120}
+                placeholder="სახელი და ნომერი"
+              />
+            </label>
+            <label className="profile-editor-wide">
+              მოკლე ბიო / დამატებითი ინფორმაცია
+              <textarea
+                value={bio}
+                onChange={event => setBio(event.target.value)}
+                maxLength={500}
+                rows={3}
+                placeholder="მაგ. გამოცდილება, ენა ან სამუშაო პრეფერენცია"
+              />
+            </label>
+          </div>
+          <div className="admin-save-row">
+            <span className="muted">სავალდებულო ველი არ არის.</span>
+            <button
+              className="primary-button"
+              type="button"
+              disabled={saveProfile.isPending}
+              onClick={() =>
+                saveProfile.mutate({
+                  preferredName,
+                  phone,
+                  bio,
+                  emergencyContact,
+                })
+              }
+            >
+              {saveProfile.isPending ? "ინახება…" : "პროფილის შენახვა"}
+            </button>
+          </div>
+        </section>
+      )}
       {auth.user?.role === "admin" && (
         <section className="manager-panel">
           <div className="section-title">

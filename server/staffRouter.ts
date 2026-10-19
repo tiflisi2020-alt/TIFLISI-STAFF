@@ -50,6 +50,46 @@ export type SwapRow = {
   status: "pending" | "approved" | "rejected" | "cancelled";
   created_at: string;
 };
+export type Announcement = {
+  id: string;
+  title: string;
+  body: string;
+  kind: "info" | "urgent" | "schedule" | "event";
+  isPinned: boolean;
+  publishedAt: string;
+  expiresAt: string | null;
+  createdAt: string;
+};
+type AnnouncementRow = {
+  id: string;
+  title: string;
+  body: string;
+  kind: Announcement["kind"];
+  is_pinned: boolean;
+  published_at: string;
+  expires_at: string | null;
+  created_at: string;
+};
+const announcementFields =
+  "id,title,body,kind,is_pinned,published_at,expires_at,created_at";
+function asAnnouncement(row: AnnouncementRow): Announcement {
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    kind: row.kind,
+    isPinned: row.is_pinned,
+    publishedAt: row.published_at,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+  };
+}
+type ProfileDetailsRow = {
+  preferred_name: string | null;
+  phone: string | null;
+  bio: string | null;
+  emergency_contact: string | null;
+};
 const swapFields =
   "id,requester_id,department,requester_name,own_date,own_time,target_name,target_date,target_time,reason,status,created_at";
 
@@ -361,6 +401,62 @@ export const staffRouter = router({
           role: rows[0].role,
         }
       : null;
+  }),
+  profile: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await supabase<ProfileDetailsRow[]>(
+      "tiflisi_profile_details",
+      `select=preferred_name,phone,bio,emergency_contact&account_id=eq.${ctx.user.id}&limit=1`
+    );
+    const row = rows[0];
+    return row
+      ? {
+          preferredName: row.preferred_name ?? "",
+          phone: row.phone ?? "",
+          bio: row.bio ?? "",
+          emergencyContact: row.emergency_contact ?? "",
+        }
+      : { preferredName: "", phone: "", bio: "", emergencyContact: "" };
+  }),
+  updateProfile: protectedProcedure
+    .input(
+      z.object({
+        preferredName: z.string().trim().max(80),
+        phone: z.string().trim().max(40),
+        bio: z.string().trim().max(500),
+        emergencyContact: z.string().trim().max(120),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const rows = await supabase<ProfileDetailsRow[]>(
+        "tiflisi_profile_details",
+        "on_conflict=account_id",
+        {
+          method: "POST",
+          prefer: "resolution=merge-duplicates,return=representation",
+          body: {
+            account_id: ctx.user.id,
+            preferred_name: input.preferredName || null,
+            phone: input.phone || null,
+            bio: input.bio || null,
+            emergency_contact: input.emergencyContact || null,
+            updated_at: new Date().toISOString(),
+          },
+        }
+      );
+      if (!rows[0])
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "პროფილის შენახვა ვერ შესრულდა.",
+        });
+      return { success: true };
+    }),
+  announcements: protectedProcedure.query(async () => {
+    const now = new Date().toISOString();
+    const rows = await supabase<AnnouncementRow[]>(
+      "tiflisi_announcements",
+      `select=${announcementFields}&published_at=lte.${encodeURIComponent(now)}&or=(expires_at.is.null,expires_at.gte.${encodeURIComponent(now)})&order=is_pinned.desc,published_at.desc&limit=10`
+    );
+    return rows.map(asAnnouncement);
   }),
   accounts: adminProcedure.query(async () => {
     return supabase<

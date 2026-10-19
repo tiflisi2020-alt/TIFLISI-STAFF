@@ -8,6 +8,7 @@ import {
   FileText,
   Info,
   MapPin,
+  Megaphone,
   UserRound,
   Users,
 } from "lucide-react";
@@ -41,6 +42,10 @@ export default function Home() {
     auth,
   } = useStaff();
   const requests = trpc.staff.requests.useQuery(undefined, {
+    enabled: !!auth.user && !viewingOther,
+    retry: false,
+  });
+  const announcements = trpc.staff.announcements.useQuery(undefined, {
     enabled: !!auth.user && !viewingOther,
     retry: false,
   });
@@ -262,6 +267,44 @@ export default function Home() {
               <ArrowUpRight size={17} />
             </Link>
           </div>
+        </section>
+      )}
+      {!viewingOther && auth.user && (
+        <section className="announcement-panel">
+          <div className="section-title">
+            <div>
+              <span className="eyebrow">შიდა ინფორმაცია</span>
+              <h2><Megaphone size={18} /> განცხადებები</h2>
+            </div>
+            <span>{announcements.data?.length ?? 0} ბოლო ჩანაწერი</span>
+          </div>
+          {announcements.isLoading ? (
+            <div className="loading-card" />
+          ) : announcements.isError ? (
+            <div className="error-banner">განცხადებები ვერ ჩაიტვირთა.</div>
+          ) : announcements.data?.length ? (
+            <div className="announcement-list">
+              {announcements.data.slice(0, 3).map(item => (
+                <article className={`announcement-card announcement-${item.kind}`} key={item.id}>
+                  <div className="announcement-card-top">
+                    <span className="announcement-kind">
+                      {item.isPinned ? "მნიშვნელოვანი" : item.kind === "urgent" ? "სასწრაფო" : item.kind === "schedule" ? "განრიგი" : item.kind === "event" ? "ღონისძიება" : "ინფორმაცია"}
+                    </span>
+                    <time dateTime={item.publishedAt}>
+                      {new Date(item.publishedAt).toLocaleDateString("ka-GE", { day: "numeric", month: "short" })}
+                    </time>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="announcement-empty">
+              <Megaphone size={20} />
+              <span>ახალი განცხადებები ჯერ არ გამოქვეყნებულა.</span>
+            </div>
+          )}
         </section>
       )}
       <section className="week-panel">

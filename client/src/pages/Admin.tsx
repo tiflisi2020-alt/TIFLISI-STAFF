@@ -8,9 +8,11 @@ import {
   ChevronRight,
   Link2,
   LogIn,
+  Megaphone,
   RefreshCw,
   Save,
   ShieldCheck,
+  Trash2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -48,7 +50,7 @@ export default function Admin() {
   const utils = trpc.useUtils();
   const isAdmin = auth.user?.role === "admin";
   const [tab, setTab] = useState<
-    "schedule" | "employees" | "requests" | "accounts"
+    "schedule" | "employees" | "requests" | "accounts" | "announcements"
   >("schedule");
   const [department, setDepartment] = useState<Department>("waiters");
   const [staffId, setStaffId] = useState("");
@@ -60,6 +62,13 @@ export default function Admin() {
   const [page, setPage] = useState(0);
   const [accountId, setAccountId] = useState("");
   const [linkedStaff, setLinkedStaff] = useState("");
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementBody, setAnnouncementBody] = useState("");
+  const [announcementKind, setAnnouncementKind] = useState<
+    "info" | "urgent" | "schedule" | "event"
+  >("info");
+  const [announcementPinned, setAnnouncementPinned] = useState(false);
+  const [announcementExpiry, setAnnouncementExpiry] = useState("");
   const roster = staff.filter(s => s.department === department);
   const person = roster.find(s => s.id === staffId) ?? roster[0];
   const weekStart = mondayOf(new Date(`${date}T12:00:00`));
@@ -102,13 +111,18 @@ export default function Admin() {
     enabled: !!isAdmin,
     retry: false,
   });
+  const announcements = trpc.admin.announcements.useQuery(undefined, {
+    enabled: !!isAdmin,
+    retry: false,
+  });
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("tab");
     if (
       requested === "schedule" ||
       requested === "employees" ||
       requested === "requests" ||
-      requested === "accounts"
+      requested === "accounts" ||
+      requested === "announcements"
     )
       setTab(requested);
   }, []);
@@ -157,6 +171,25 @@ export default function Admin() {
         utils.staff.account.invalidate(),
         utils.auth.me.invalidate(),
       ]);
+    },
+    onError: e => toast.error(e.message),
+  });
+  const createAnnouncement = trpc.admin.createAnnouncement.useMutation({
+    onSuccess: async () => {
+      toast.success("განცხადება გამოქვეყნდა.");
+      setAnnouncementTitle("");
+      setAnnouncementBody("");
+      setAnnouncementKind("info");
+      setAnnouncementPinned(false);
+      setAnnouncementExpiry("");
+      await announcements.refetch();
+    },
+    onError: e => toast.error(e.message),
+  });
+  const archiveAnnouncement = trpc.admin.archiveAnnouncement.useMutation({
+    onSuccess: async () => {
+      toast.success("განცხადება დაარქივდა.");
+      await announcements.refetch();
     },
     onError: e => toast.error(e.message),
   });
@@ -274,6 +307,12 @@ export default function Admin() {
           onClick={() => setTab("accounts")}
         >
           <Link2 size={16} /> ანგარიშები
+        </button>
+        <button
+          className={tab === "announcements" ? "active" : ""}
+          onClick={() => setTab("announcements")}
+        >
+          <Megaphone size={16} /> განცხადებები
         </button>
       </div>
       {tab !== "requests" &&
@@ -700,6 +739,126 @@ export default function Admin() {
             >
               შემდეგი <ChevronRight size={16} />
             </button>
+          </div>
+        </section>
+      )}
+      {tab === "announcements" && (
+        <section className="manager-panel announcements-admin-panel">
+          <div className="section-title">
+            <div>
+              <h2><Megaphone size={19} /> ახალი განცხადება</h2>
+              <p>გამოქვეყნებული ინფორმაცია თანამშრომლების მთავარ გვერდზე გამოჩნდება.</p>
+            </div>
+            <span>{announcements.data?.length ?? 0} ჩანაწერი</span>
+          </div>
+          <form
+            className="announcement-admin-form"
+            onSubmit={event => {
+              event.preventDefault();
+              createAnnouncement.mutate({
+                title: announcementTitle,
+                body: announcementBody,
+                kind: announcementKind,
+                isPinned: announcementPinned,
+                expiresAt: announcementExpiry
+                  ? new Date(`${announcementExpiry}T23:59:59`).toISOString()
+                  : null,
+              });
+            }}
+          >
+            <label>
+              სათაური
+              <input
+                value={announcementTitle}
+                onChange={event => setAnnouncementTitle(event.target.value)}
+                maxLength={160}
+                required
+                placeholder="მაგ. ხვალინდელი შეხვედრა"
+              />
+            </label>
+            <label>
+              ტიპი
+              <select
+                value={announcementKind}
+                onChange={event =>
+                  setAnnouncementKind(event.target.value as typeof announcementKind)
+                }
+              >
+                <option value="info">ინფორმაცია</option>
+                <option value="urgent">სასწრაფო</option>
+                <option value="schedule">განრიგი</option>
+                <option value="event">ღონისძიება</option>
+              </select>
+            </label>
+            <label>
+              აქტიურია მანამდე
+              <input
+                type="date"
+                value={announcementExpiry}
+                onChange={event => setAnnouncementExpiry(event.target.value)}
+              />
+            </label>
+            <label className="announcement-admin-wide">
+              ტექსტი
+              <textarea
+                value={announcementBody}
+                onChange={event => setAnnouncementBody(event.target.value)}
+                maxLength={5000}
+                rows={4}
+                required
+                placeholder="დაწერე მოკლე და გასაგები შეტყობინება"
+              />
+            </label>
+            <label className="announcement-pin-option">
+              <input
+                type="checkbox"
+                checked={announcementPinned}
+                onChange={event => setAnnouncementPinned(event.target.checked)}
+              />
+              მთავარ გვერდზე ზემოთ გამოჩნდეს
+            </label>
+            <div className="admin-save-row announcement-admin-actions">
+              <span className="muted">განცხადება ხილული იქნება ავტორიზებული თანამშრომლებისთვის.</span>
+              <button className="primary-button" type="submit" disabled={createAnnouncement.isPending}>
+                <Megaphone size={16} />
+                {createAnnouncement.isPending ? "ქვეყნდება…" : "გამოქვეყნება"}
+              </button>
+            </div>
+          </form>
+          <div className="announcement-admin-list">
+            <div className="section-title">
+              <h2>გამოქვეყნებული განცხადებები</h2>
+              <button className="text-link" type="button" onClick={() => announcements.refetch()}>
+                <RefreshCw size={14} /> განახლება
+              </button>
+            </div>
+            {announcements.isLoading ? (
+              <div className="loading-card" />
+            ) : announcements.isError ? (
+              <div className="error-banner">განცხადებების სია ვერ ჩაიტვირთა.</div>
+            ) : announcements.data?.length ? (
+              announcements.data.map(item => (
+                <article className="announcement-admin-row" key={item.id}>
+                  <div>
+                    <b>{item.title}</b>
+                    <p>{item.body}</p>
+                    <small>{item.is_pinned ? "მნიშვნელოვანი · " : ""}{new Date(item.published_at).toLocaleDateString("ka-GE")}</small>
+                  </div>
+                  <button
+                    className="icon-button"
+                    type="button"
+                    title="არქივირება"
+                    aria-label={`${item.title} არქივში გადატანა`}
+                    disabled={archiveAnnouncement.isPending}
+                    onClick={() => archiveAnnouncement.mutate({ id: item.id })}
+                  >
+                    <Trash2 size={17} />
+                  </button>
+                </article>
+              ))
+            ) : (
+              <EmptyState title="განცხადებები ჯერ არ არის" description="პირველი განცხადება ზემოთ მოცემული ფორმით გამოაქვეყნე." />
+            )}
           </div>
         </section>
       )}
