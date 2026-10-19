@@ -185,8 +185,8 @@ select:focus {
   background: #F6EDE6;
 }
 .nav-item.active {
-  background: #F6E6DA;
-  color: var(--primary);
+  background: var(--primary);
+  color: #fff;
   font-weight: 700;
 }
 .nav-item.active:before {
@@ -357,19 +357,19 @@ select:focus {
   gap: 10px;
   min-height: 42px;
   padding: 5px 10px 5px 6px;
-  border: 1px solid #D8B8A6;
+  border: 1px solid var(--primary);
   border-radius: 12px;
-  background: #FFF8F3;
-  color: #4A2B21;
+  background: var(--primary);
+  color: #fff;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 }
 .viewer-button:hover,
 .viewer-button:focus-visible {
-  background: #F6E6DA;
-  border-color: #B9785F;
-  outline: 2px solid #D8B8A6;
+  background: #6C2C1F;
+  border-color: #6C2C1F;
+  outline: 2px solid #C99782;
   outline-offset: 2px;
 }
 .viewer-name {
@@ -2664,8 +2664,8 @@ select:focus {
     min-height: 42px;
   }
   .bottom-nav a.active {
-    color: var(--primary);
-    background: #F0DCCE;
+    color: #fff;
+    background: var(--primary);
     border-radius: 10px;
     font-weight: 700;
   }
@@ -3719,19 +3719,19 @@ select:focus {
   color: #FFF8F4;
 }
 .sidebar .nav-item.active {
-  background: #F6E6DA;
-  color: #6B2E24;
+  background: var(--primary);
+  color: #FFFFFF;
 }
 .sidebar .nav-item.active:before {
-  background: #E8C4B0;
+  background: #F0D4C6;
 }
 .sidebar .nav-count {
   background: #4A1C16;
   color: #F6E6DA;
 }
 .sidebar .nav-item.active .nav-count {
-  background: #E8D0C2;
-  color: #6B2E24;
+  background: #6C2C1F;
+  color: #FFFFFF;
 }
 .sidebar .note-rule {
   background: #E8B89A;
@@ -3744,5 +3744,5 @@ select:focus {
   border-top-color: #E0D0C4;
 }
 .bottom-nav a.active svg {
-  background: #F0DCCE;
+  background: transparent;
 }
