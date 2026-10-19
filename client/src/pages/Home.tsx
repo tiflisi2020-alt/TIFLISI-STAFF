@@ -1,15 +1,19 @@
 import {
   ArrowRight,
   ArrowUpRight,
+  ArrowLeftRight,
   CalendarDays,
   Clock3,
   Coffee,
+  FileText,
   Info,
   MapPin,
+  UserRound,
   Users,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useStaff } from "@/contexts/StaffContext";
+import { trpc } from "@/lib/trpc";
 import { addDays, dateKey, isWorking, prettyTime } from "@shared/schedule";
 import {
   Avatar,
@@ -36,6 +40,10 @@ export default function Home() {
     viewingOther,
     auth,
   } = useStaff();
+  const requests = trpc.staff.requests.useQuery(undefined, {
+    enabled: !!auth.user && !viewingOther,
+    retry: false,
+  });
   const weekShifts = (weekQuery.data ?? []).filter(
     s =>
       s.name === selected?.name &&
@@ -207,6 +215,55 @@ export default function Home() {
           </div>
         </section>
       </div>
+      {!viewingOther && (
+        <section className="employee-portal">
+          <div className="section-title">
+            <div>
+              <span className="eyebrow">თანამშრომლის პორტალი</span>
+              <h2>ყველაფერი შენს სამუშაო სივრცეში</h2>
+            </div>
+            <Link href={auth.user ? "/profile" : "/login"} className="text-link">
+              {auth.user ? "პროფილის გახსნა" : "ანგარიშში შესვლა"} <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="portal-grid">
+            <Link href={auth.user ? "/profile" : "/login"} className="portal-card">
+              <span className="portal-card-icon"><UserRound size={20} /></span>
+              <span>
+                <strong>{auth.user ? "ჩემი პროფილი" : "შენი ანგარიში"}</strong>
+                <small>{auth.user ? "პირადი ინფორმაცია და კვირის ცვლები" : "შედი, რომ პირადი ფუნქციები გამოიყენო"}</small>
+              </span>
+              <ArrowUpRight size={17} />
+            </Link>
+            <Link href="/swap" className="portal-card">
+              <span className="portal-card-icon"><ArrowLeftRight size={20} /></span>
+              <span>
+                <strong>ცვლის ჩანაცვლება</strong>
+                <small>გააგზავნე ან მართე გაცვლის მოთხოვნა</small>
+              </span>
+              <ArrowUpRight size={17} />
+            </Link>
+            <Link href={auth.user ? "/profile" : "/schedule"} className="portal-card">
+              <span className="portal-card-icon"><FileText size={20} /></span>
+              <span>
+                <strong>ჩემი მოთხოვნები</strong>
+                <small>
+                  {!auth.user
+                    ? "შედი ანგარიშში სტატუსების სანახავად"
+                    : requests.isLoading
+                      ? "იტვირთება…"
+                      : requests.isError
+                        ? "სტატუსი ვერ ჩაიტვირთა"
+                        : requests.data?.length
+                          ? `${requests.data.filter(r => r.status === "pending").length} მიმდინარე მოთხოვნა`
+                          : "მოთხოვნა ჯერ არ არის"}
+                </small>
+              </span>
+              <ArrowUpRight size={17} />
+            </Link>
+          </div>
+        </section>
+      )}
       <section className="week-panel">
         <div className="section-title">
           <div>

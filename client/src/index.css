@@ -752,6 +752,74 @@ select:focus {
   grid-template-columns: 1.35fr 1fr;
   gap: 27px;
 }
+.employee-portal {
+  background: #F3E6DC;
+  border: 1px solid #DCC2B2;
+  border-radius: 15px;
+  padding: 22px 24px;
+  margin: 27px 0;
+}
+.employee-portal .section-title {
+  margin-bottom: 15px;
+}
+.employee-portal .section-title h2 {
+  margin-top: 5px;
+}
+.portal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.portal-card {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px;
+  color: #4F2A20;
+  background: #FFF8F3;
+  border: 1px solid #D8B8A6;
+  border-radius: 11px;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+.portal-card:hover {
+  transform: translateY(-2px);
+  border-color: #A96852;
+  box-shadow: 0 5px 14px #8B3A2A18;
+}
+.portal-card > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+.portal-card strong,
+.portal-card small {
+  display: block;
+}
+.portal-card strong {
+  font-size: 11px;
+  color: #4A1F16;
+}
+.portal-card small {
+  margin-top: 6px;
+  color: #6E5248;
+  font-size: 9px;
+  line-height: 1.6;
+}
+.portal-card > svg {
+  flex-shrink: 0;
+  color: #8B3A2A;
+}
+.portal-card-icon {
+  width: 37px;
+  height: 37px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: #8B3A2A;
+  background: #F2D8CA;
+}
 .next-panel,
 .team-panel {
   background: #FBF6F1;
@@ -2357,6 +2425,13 @@ select:focus {
   }
   .dashboard-bottom {
     gap: 22px;
+  }
+  .employee-portal {
+    padding: 19px;
+    margin: 22px 0;
+  }
+  .portal-grid {
+    grid-template-columns: 1fr;
   }
   .next-panel,
   .team-panel {
