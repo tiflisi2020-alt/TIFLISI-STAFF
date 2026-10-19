@@ -207,6 +207,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               aria-label="თანამშრომლის განრიგის არჩევა"
             >
               <Avatar name={selected?.name ?? "ტიფლისი"} size="small" />
+              <span className="viewer-name">{selected?.name ?? "თანამშრომელი"}</span>
               <ChevronDown size={14} />
             </button>
           </div>

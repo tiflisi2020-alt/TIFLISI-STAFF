@@ -355,8 +355,27 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: transparent;
-  color: #6E5248;
+  min-height: 42px;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid #D8B8A6;
+  border-radius: 12px;
+  background: #FFF8F3;
+  color: #4A2B21;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.viewer-button:hover,
+.viewer-button:focus-visible {
+  background: #F6E6DA;
+  border-color: #B9785F;
+  outline: 2px solid #D8B8A6;
+  outline-offset: 2px;
+}
+.viewer-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .mobile-brand {
   display: none;
@@ -2405,6 +2424,15 @@ select:focus {
   .viewer-button > svg {
     display: none;
   }
+  .viewer-button {
+    min-height: 38px;
+    gap: 6px;
+    padding: 4px 8px 4px 5px;
+    font-size: 9px;
+  }
+  .viewer-name {
+    max-width: 84px;
+  }
   .notification-button {
     min-width: 29px;
   }
@@ -2637,13 +2665,16 @@ select:focus {
   }
   .bottom-nav a.active {
     color: var(--primary);
+    background: #F0DCCE;
+    border-radius: 10px;
+    font-weight: 700;
   }
   .bottom-nav a svg {
     padding: 3px;
     box-sizing: content-box;
   }
   .bottom-nav a.active svg {
-    background: #F4E0D2;
+    background: transparent;
     border-radius: 8px;
   }
   .page-footer {
