@@ -229,7 +229,7 @@ export default function Admin() {
       <PageHeading
         eyebrow="რესტორანის მართვა"
         title="ადმინისტრაცია"
-        description="განრიგი, თანამშრომლები, გაცვლის მოთხოვნები და ანგარიშების დაკავშირება."
+        description="აირჩიე საქმე და გააკეთე ცვლილება რამდენიმე მარტივი ნაბიჯით."
         action={
           <span className="admin-access">
             <ShieldCheck size={17} /> ადმინისტრატორის წვდომა
@@ -246,12 +246,47 @@ export default function Admin() {
           </p>
         </div>
       </div>
+      <div className="admin-quick-actions" aria-label="სწრაფი მოქმედებები">
+        <button
+          type="button"
+          className="admin-quick-action"
+          onClick={() => setTab("schedule")}
+        >
+          <CalendarDays size={20} />
+          <span>
+            <b>განრიგის შეცვლა</b>
+            <small>აირჩიე თანამშრომელი და დღე</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="admin-quick-action"
+          onClick={() => setTab("employees")}
+        >
+          <UserRoundPlus size={20} />
+          <span>
+            <b>თანამშრომლის დამატება</b>
+            <small>მართე გუნდის წევრები</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          className={`admin-quick-action${requests.data?.length ? " has-alert" : ""}`}
+          onClick={() => setTab("requests")}
+        >
+          <Check size={20} />
+          <span>
+            <b>მოთხოვნების ნახვა</b>
+            <small>{requests.data?.length ? `${requests.data.length} ელოდება პასუხს` : "ყველაფერი მოწესრიგებულია"}</small>
+          </span>
+        </button>
+      </div>
       <div className="admin-tabs">
         <button
           className={tab === "schedule" ? "active" : ""}
           onClick={() => setTab("schedule")}
         >
-          <CalendarDays size={16} /> განრიგის მართვა
+          <CalendarDays size={16} /> განრიგი
         </button>
         <button
           className={tab === "employees" ? "active" : ""}
@@ -263,7 +298,7 @@ export default function Admin() {
           className={tab === "requests" ? "active" : ""}
           onClick={() => setTab("requests")}
         >
-          <Check size={16} /> დადასტურება
+          <Check size={16} /> მოთხოვნები
           {status === "pending" &&
             page === 0 &&
             !!requests.data?.length &&
@@ -309,6 +344,10 @@ export default function Admin() {
             >
               <RefreshCw size={14} /> განახლება
             </button>
+          </div>
+          <div className="admin-help-strip">
+            <b>როგორ შევცვალოთ ცვლა:</b>
+            <span>1. აირჩიე დეპარტამენტი · 2. დააჭირე თანამშრომელს · 3. აირჩიე დღე · 4. შეავსე ფორმა და შეინახე</span>
           </div>
           <div className="admin-weekbar">
             <label>

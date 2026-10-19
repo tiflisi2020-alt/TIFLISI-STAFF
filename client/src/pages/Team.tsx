@@ -6,6 +6,7 @@ import {
   departmentLabels,
   isWorking,
   prettyTime,
+  type DepartmentId,
 } from "@shared/schedule";
 import { useStaff } from "@/contexts/StaffContext";
 import { Avatar, EmptyState, PageHeading } from "@/components/staff/Shared";
@@ -13,7 +14,7 @@ import { Avatar, EmptyState, PageHeading } from "@/components/staff/Shared";
 export default function Team() {
   const { staff, selectStaff, upcoming, today, roster } = useStaff();
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState<DepartmentId | "all">("all");
   const visible = useMemo(
     () =>
       staff.filter(
@@ -46,7 +47,7 @@ export default function Team() {
         <kbd>ძებნა</kbd>
       </div>
       <div className="department-tabs">
-        {[["all", "ყველა"], ...Object.entries(departmentLabels)].map(
+        {[["all", "ყველა"] as const, ...departmentIds.map(id => [id, departmentLabels[id]] as const)].map(
           ([id, label]) => (
             <button
               key={id}

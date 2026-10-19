@@ -35,6 +35,13 @@ const statuses: Record<string, string> = {
   rejected: "უარყოფილი",
   cancelled: "გაუქმებული",
 };
+
+function getDepartmentLabel(department?: string) {
+  return department && department in departmentLabels
+    ? departmentLabels[department as DepartmentId]
+    : "—";
+}
+
 export default function Profile() {
   const { auth, selected, myStaff, staff, account, weekQuery } = useStaff();
   const utils = trpc.useUtils();
@@ -189,10 +196,10 @@ export default function Profile() {
               <dt>დეპარტამენტი</dt>
               <dd>
                 {myStaff
-                  ? departmentLabels[myStaff.department]
+                  ? getDepartmentLabel(myStaff.department)
                   : auth.user
                     ? "დაკავშირება საჭიროა"
-                    : (departmentLabels[selected?.department ?? ""] ?? "—")}
+                    : getDepartmentLabel(selected?.department)}
               </dd>
             </div>
             {auth.user?.email && (

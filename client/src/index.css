@@ -2920,6 +2920,68 @@ select:focus {
   margin: 24px 0;
   flex-wrap: wrap;
 }
+.admin-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0 18px;
+}
+.admin-quick-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 74px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #FBF6F1;
+  color: #6E5248;
+  text-align: left;
+  transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.admin-quick-action:hover,
+.admin-quick-action:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 8px 20px rgba(139, 58, 42, .09);
+  transform: translateY(-1px);
+}
+.admin-quick-action > svg {
+  flex: none;
+  color: var(--primary);
+}
+.admin-quick-action span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.admin-quick-action b {
+  color: #2A1814;
+  font-size: 12px;
+}
+.admin-quick-action small {
+  font-size: 10px;
+  color: #6E5248;
+}
+.admin-quick-action.has-alert {
+  border-color: #DDAF9D;
+  background: #FFF7F2;
+}
+.admin-help-strip {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 14px 0 18px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  background: #F6E6DA;
+  color: #6E4A3C;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.admin-help-strip b {
+  color: #8B3A2A;
+  white-space: nowrap;
+}
 .admin-tabs button {
   display: flex;
   align-items: center;
@@ -3215,6 +3277,10 @@ select:focus {
     flex-wrap: nowrap;
     overflow: auto;
     gap: 7px;
+  }
+  .admin-quick-actions {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
   .admin-tabs button {
     font-size: 9px;
