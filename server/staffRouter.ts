@@ -146,7 +146,6 @@ export async function getStaff(): Promise<Staff[]> {
           name: row.name,
           department,
           role: config.role,
-          avatarUrl: avatarByStaffId.get(`${department}:${row.id}`) ?? null,
         }));
       })
     ),
@@ -157,7 +156,13 @@ export async function getStaff(): Promise<Staff[]> {
   ]);
   const avatarByStaffId = await getStaffAvatarMap();
   const hidden = new Set(inactive.map(row => row.staff_id));
-  return batches.flat().filter(person => !hidden.has(person.id));
+  return batches
+    .flat()
+    .filter(person => !hidden.has(person.id))
+    .map(person => ({
+      ...person,
+      avatarUrl: avatarByStaffId.get(person.id) ?? null,
+    }));
 }
 
 export async function getShifts(from: string, to: string): Promise<Shift[]> {
