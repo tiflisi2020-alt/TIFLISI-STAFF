@@ -46,6 +46,15 @@ export function useAuth(options?: UseAuthOptions) {
         sessionStorage.removeItem("manus-cookie");
       } catch {}
       utils.auth.me.setData(undefined, null);
+      await Promise.all([
+        utils.staff.profile.reset(),
+        utils.staff.incoming.reset(),
+        utils.staff.requests.reset(),
+        utils.staff.account.reset(),
+        utils.staff.accounts.reset(),
+        utils.admin.directory.reset(),
+        utils.admin.requests.reset(),
+      ]);
       await utils.auth.me.invalidate();
     }
   }, [logoutMutation, utils]);

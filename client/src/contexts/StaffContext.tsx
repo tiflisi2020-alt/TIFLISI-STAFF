@@ -15,15 +15,30 @@ import {
   restaurantToday,
 } from "@shared/schedule";
 
+function readStoredStaffId() {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem("tiflisi-view-staff") ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function storeStaffId(id: string) {
+  try {
+    window.localStorage.setItem("tiflisi-view-staff", id);
+  } catch {
+    // Storage may be unavailable in private browsing; in-memory state still works.
+  }
+}
+
 function useStaffState() {
   const auth = useAuth();
   const roster = trpc.staff.roster.useQuery(undefined, {
     staleTime: 60000,
     retry: 1,
   });
-  const [staffId, setStaffId] = useState(
-    () => localStorage.getItem("tiflisi-view-staff") ?? ""
-  );
+  const [staffId, setStaffId] = useState(readStoredStaffId);
   const [week, setWeek] = useState(() => mondayOf(restaurantDate()));
   const [day, setDay] = useState(() => restaurantToday());
   const account = trpc.staff.account.useQuery(undefined, {
@@ -50,7 +65,7 @@ function useStaffState() {
   }, [myStaff?.id]);
   const selectStaff = (id: string) => {
     setStaffId(id);
-    localStorage.setItem("tiflisi-view-staff", id);
+    storeStaffId(id);
   };
   const selectDate = (date: string) => {
     setDay(date);

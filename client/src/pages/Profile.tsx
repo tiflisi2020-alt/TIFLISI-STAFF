@@ -89,17 +89,18 @@ export default function Profile() {
     enabled: !!auth.user,
     retry: false,
   });
+  const privateProfile = auth.user ? profile.data : undefined;
   const [preferredName, setPreferredName] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
   useEffect(() => {
-    if (!profile.data) return;
-    setPreferredName(profile.data.preferredName);
-    setPhone(profile.data.phone);
-    setBio(profile.data.bio);
-    setEmergencyContact(profile.data.emergencyContact);
-  }, [profile.data]);
+    if (!privateProfile) return;
+    setPreferredName(privateProfile.preferredName);
+    setPhone(privateProfile.phone);
+    setBio(privateProfile.bio);
+    setEmergencyContact(privateProfile.emergencyContact);
+  }, [privateProfile]);
   const [accountId, setAccountId] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const person = myStaff ?? selected;
@@ -255,18 +256,31 @@ export default function Profile() {
           </div>
         </div>
       )}
+      {auth.user && profile.isLoading && (
+        <div className="loading-card" role="status" aria-live="polite">
+          პროფილის მონაცემები იტვირთება…
+        </div>
+      )}
+      {auth.user && profile.isError && (
+        <div className="error-banner" role="alert">
+          პროფილის მონაცემები ვერ ჩაიტვირთა. {" "}
+          <button type="button" onClick={() => profile.refetch()}>
+            ხელახლა ცდა
+          </button>
+        </div>
+      )}
       <div className="profile-grid">
         <section className="profile-card">
           <div className="profile-cover" />
           <Avatar
             name={
-              profile.data?.preferredName ||
+              privateProfile?.preferredName ||
               myStaff?.name ||
               auth.user?.name ||
               selected?.name ||
               "ტიფლისი"
             }
-            src={profile.data?.avatarUrl}
+            src={privateProfile?.avatarUrl}
             size="large"
           />
           {auth.user && (
@@ -287,7 +301,7 @@ export default function Profile() {
                 <ImagePlus size={15} />
                 {uploadAvatar.isPending ? "იტვირთება…" : "ფოტოს ატვირთვა"}
               </button>
-              {profile.data?.avatarUrl && (
+              {privateProfile?.avatarUrl && (
                 <button
                   className="text-link"
                   type="button"
@@ -301,7 +315,7 @@ export default function Profile() {
             </div>
           )}
           <h2>
-            {profile.data?.preferredName ||
+            {privateProfile?.preferredName ||
               myStaff?.name ||
               auth.user?.name ||
               selected?.name ||
@@ -424,7 +438,7 @@ export default function Profile() {
             <button
               className="primary-button"
               type="button"
-              disabled={saveProfile.isPending}
+              disabled={saveProfile.isPending || profile.isLoading || profile.isError}
               onClick={() =>
                 saveProfile.mutate({
                   preferredName,

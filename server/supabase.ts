@@ -24,14 +24,23 @@ export async function supabase<T>(
     }
   );
   if (!response.ok) {
+    const detail = await response.text();
     if (response.status === 409)
       throw new Error(
-        "ეს ჩანაწერი უკვე არსებობს ან თანამშრომელი სხვა ანგარიშთან არის დაკავშირებული."
+        detail ||
+          "ეს ჩანაწერი უკვე არსებობს ან თანამშრომელი სხვა ანგარიშთან არის დაკავშირებული."
       );
-    throw new Error(`Supabase-სთან კავშირი ვერ შესრულდა (${response.status}).`);
+    throw new Error(
+      `Supabase-სთან კავშირი ვერ შესრულდა (${response.status})${detail ? `: ${detail}` : "."}`
+    );
   }
   const text = await response.text();
-  return (text ? JSON.parse(text) : null) as T;
+  if (!text.trim()) return [] as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error("Supabase-მა არასწორი მონაცემთა ფორმატი დააბრუნა.");
+  }
 }
 
 function storagePath(path: string) {
