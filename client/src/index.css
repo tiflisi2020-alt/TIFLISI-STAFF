@@ -424,9 +424,9 @@ select:focus {
   font-size: 10px;
 }
 .avatar-large {
-  width: 52px;
-  height: 52px;
-  font-size: 17px;
+  width: 76px;
+  height: 76px;
+  font-size: 22px;
 }
 .avatar-1 {
   background: #ebe4db;
@@ -1692,9 +1692,9 @@ select:focus {
   margin: 0 -24px 0;
 }
 .profile-card > .avatar {
-  width: 62px;
-  height: 62px;
-  margin-top: -28px;
+  width: 88px;
+  height: 88px;
+  margin-top: -40px;
   border: 4px solid white;
   position: relative;
 }
@@ -2784,9 +2784,9 @@ select:focus {
     margin: 0 0 13px;
   }
   .person-top .avatar {
-    width: 43px;
-    height: 43px;
-    font-size: 13px;
+    width: 66px;
+    height: 66px;
+    font-size: 18px;
   }
   .person-card h3 {
     font-size: 13px;

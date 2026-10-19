@@ -520,7 +520,7 @@ export const staffRouter = router({
     .input(
       z.object({
         mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-        base64: z.string().min(100).max(7000000),
+        base64: z.string().min(100).max(2200000),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -531,10 +531,10 @@ export const staffRouter = router({
             ? "png"
             : "webp";
       const bytes = Buffer.from(input.base64, "base64");
-      if (!bytes.length || bytes.length > 5 * 1024 * 1024)
+      if (!bytes.length || bytes.length > 1.5 * 1024 * 1024)
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "ფოტო უნდა იყოს 5 MB-ზე ნაკლები.",
+          message: "შეკუმშული ფოტო უნდა იყოს 1.5 MB-ზე ნაკლები.",
         });
       const path = avatarPathForUser(ctx.user.openId, extension);
       const current = await supabase<Pick<ProfileDetailsRow, "avatar_path">[]>(

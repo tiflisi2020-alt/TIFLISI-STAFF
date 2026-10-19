@@ -44,6 +44,32 @@ function getDepartmentLabel(department?: string) {
     : "—";
 }
 
+async function compressAvatar(file: File) {
+  const source = await createImageBitmap(file);
+  const maxSize = 512;
+  const scale = Math.min(1, maxSize / Math.max(source.width, source.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(source.width * scale));
+  canvas.height = Math.max(1, Math.round(source.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("ფოტოს დამუშავება ვერ შესრულდა.");
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  source.close();
+  const blob = await new Promise<Blob | null>(resolve =>
+    canvas.toBlob(resolve, "image/webp", 0.72)
+  );
+  if (!blob) throw new Error("ფოტოს შეკუმშვა ვერ შესრულდა.");
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return { base64: btoa(binary), size: blob.size };
+}
+
 export default function Profile() {
   const { auth, selected, myStaff, staff, account, weekQuery } = useStaff();
   const utils = trpc.useUtils();
@@ -152,13 +178,19 @@ export default function Profile() {
       toast.error("ფოტო უნდა იყოს 5 MB-ზე ნაკლები.");
       return;
     }
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    let binary = "";
-    const chunkSize = 0x8000;
-    for (let index = 0; index < bytes.length; index += chunkSize) {
-      binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+    try {
+      const compressed = await compressAvatar(file);
+      if (compressed.size > 1.5 * 1024 * 1024) {
+        toast.error("ფოტოს შემცირებული ზომაც ზედმეტად დიდია.");
+        return;
+      }
+      uploadAvatar.mutate({
+        mimeType: "image/webp",
+        base64: compressed.base64,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "ფოტოს დამუშავება ვერ შესრულდა.");
     }
-    uploadAvatar.mutate({ mimeType: file.type as "image/jpeg" | "image/png" | "image/webp", base64: btoa(binary) });
   };
   const connect = () => {
     const s = staff.find(s => s.id === employeeId);
@@ -265,7 +297,7 @@ export default function Profile() {
                   <Trash2 size={14} /> წაშლა
                 </button>
               )}
-              <small>JPG, PNG ან WebP · მაქს. 5 MB</small>
+              <small>ავტომატურად მცირდება 512px-მდე · მაქს. 1.5 MB</small>
             </div>
           )}
           <h2>
