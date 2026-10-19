@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
   CalendarDays,
   Check,
   CheckCircle2,
   Clock3,
+  ImagePlus,
   Link2,
   LogIn,
   LogOut,
   ShieldCheck,
+  Trash2,
   UserRound,
   X,
 } from "lucide-react";
@@ -123,6 +125,41 @@ export default function Profile() {
     },
     onError: error => toast.error(error.message),
   });
+  const uploadAvatar = trpc.staff.uploadAvatar.useMutation({
+    onSuccess: async () => {
+      toast.success("პროფილის ფოტო განახლდა.");
+      await Promise.all([profile.refetch(), utils.staff.roster.invalidate()]);
+    },
+    onError: error => toast.error(error.message),
+  });
+  const deleteAvatar = trpc.staff.deleteAvatar.useMutation({
+    onSuccess: async () => {
+      toast.success("პროფილის ფოტო წაიშალა.");
+      await Promise.all([profile.refetch(), utils.staff.roster.invalidate()]);
+    },
+    onError: error => toast.error(error.message),
+  });
+  const avatarInput = useRef<HTMLInputElement>(null);
+  const selectAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("აირჩიე JPG, PNG ან WebP ფოტო.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("ფოტო უნდა იყოს 5 MB-ზე ნაკლები.");
+      return;
+    }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let binary = "";
+    const chunkSize = 0x8000;
+    for (let index = 0; index < bytes.length; index += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+    }
+    uploadAvatar.mutate({ mimeType: file.type as "image/jpeg" | "image/png" | "image/webp", base64: btoa(binary) });
+  };
   const connect = () => {
     const s = staff.find(s => s.id === employeeId);
     const id = Number(accountId || auth.user?.id);
@@ -197,8 +234,40 @@ export default function Profile() {
               selected?.name ||
               "ტიფლისი"
             }
+            src={profile.data?.avatarUrl}
             size="large"
           />
+          {auth.user && (
+            <div className="profile-avatar-actions">
+              <input
+                ref={avatarInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={selectAvatar}
+                hidden
+              />
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={uploadAvatar.isPending || deleteAvatar.isPending}
+                onClick={() => avatarInput.current?.click()}
+              >
+                <ImagePlus size={15} />
+                {uploadAvatar.isPending ? "იტვირთება…" : "ფოტოს ატვირთვა"}
+              </button>
+              {profile.data?.avatarUrl && (
+                <button
+                  className="text-link"
+                  type="button"
+                  disabled={uploadAvatar.isPending || deleteAvatar.isPending}
+                  onClick={() => deleteAvatar.mutate()}
+                >
+                  <Trash2 size={14} /> წაშლა
+                </button>
+              )}
+              <small>JPG, PNG ან WebP · მაქს. 5 MB</small>
+            </div>
+          )}
           <h2>
             {profile.data?.preferredName ||
               myStaff?.name ||

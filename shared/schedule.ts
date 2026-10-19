@@ -3,6 +3,7 @@ export type Staff = {
   name: string;
   department: string;
   role: string;
+  avatarUrl?: string | null;
 };
 export type Shift = {
   id: string;

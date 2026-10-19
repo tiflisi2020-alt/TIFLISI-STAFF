@@ -9,7 +9,10 @@ import {
 import { ADMIN_DEPARTMENT, hasAdminAccess, isManagerIdentity } from "./manager";
 import {
   departments,
+  removeStaffAvatar,
+  signedStaffAvatarUrl,
   supabase,
+  uploadStaffAvatar,
   type AccountRow,
   type Department,
 } from "./supabase";
@@ -85,6 +88,7 @@ function asAnnouncement(row: AnnouncementRow): Announcement {
   };
 }
 type ProfileDetailsRow = {
+  avatar_path: string | null;
   preferred_name: string | null;
   phone: string | null;
   bio: string | null;
@@ -92,6 +96,42 @@ type ProfileDetailsRow = {
 };
 const swapFields =
   "id,requester_id,department,requester_name,own_date,own_time,target_name,target_date,target_time,reason,status,created_at";
+
+async function getStaffAvatarMap() {
+  const accounts = await supabase<{ id: number; staff_id: string | null }[]>(
+    "tiflisi_accounts",
+    "select=id,staff_id&staff_id=not.is.null&limit=500"
+  );
+  const staffIds = accounts
+    .map(row => row.staff_id)
+    .filter((value): value is string => Boolean(value));
+  if (!staffIds.length) return new Map<string, string>();
+  const profiles = await supabase<
+    { account_id: number; avatar_path: string | null }[]
+  >(
+    "tiflisi_profile_details",
+    `select=account_id,avatar_path&avatar_path=not.is.null&limit=500`
+  );
+  const accountById = new Map(accounts.map(row => [row.id, row.staff_id]));
+  const urls = await Promise.all(
+    profiles
+      .filter(row => row.avatar_path)
+      .map(async row => {
+        try {
+          return [row.account_id, await signedStaffAvatarUrl(row.avatar_path!)] as const;
+        } catch {
+          return [row.account_id, null] as const;
+        }
+      })
+  );
+  const urlByAccount = new Map(urls.filter(([, url]) => url));
+  const result = new Map<string, string>();
+  for (const [index, staffId] of accountById) {
+    const url = urlByAccount.get(index);
+    if (staffId && url) result.set(staffId, url);
+  }
+  return result;
+}
 
 export async function getStaff(): Promise<Staff[]> {
   const [batches, inactive] = await Promise.all([
@@ -106,6 +146,7 @@ export async function getStaff(): Promise<Staff[]> {
           name: row.name,
           department,
           role: config.role,
+          avatarUrl: avatarByStaffId.get(`${department}:${row.id}`) ?? null,
         }));
       })
     ),
@@ -114,6 +155,7 @@ export async function getStaff(): Promise<Staff[]> {
       "select=staff_id&active=eq.false&limit=500"
     ),
   ]);
+  const avatarByStaffId = await getStaffAvatarMap();
   const hidden = new Set(inactive.map(row => row.staff_id));
   return batches.flat().filter(person => !hidden.has(person.id));
 }
@@ -371,6 +413,16 @@ export async function exchangeShifts(request: SwapRow) {
   return undo;
 }
 
+function avatarPathForUser(openId: string, extension: "jpg" | "png" | "webp") {
+  const authId = openId.replace(/^supabase:/, "");
+  if (!/^[0-9a-f-]{20,}$/i.test(authId))
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "ავატარის ატვირთვა მხოლოდ Supabase Auth ანგარიშისთვის არის შესაძლებელი.",
+    });
+  return `${authId}/avatar.${extension}`;
+}
+
 export const staffRouter = router({
   roster: publicProcedure.query(getStaff),
   shifts: publicProcedure
@@ -405,17 +457,26 @@ export const staffRouter = router({
   profile: protectedProcedure.query(async ({ ctx }) => {
     const rows = await supabase<ProfileDetailsRow[]>(
       "tiflisi_profile_details",
-      `select=preferred_name,phone,bio,emergency_contact&account_id=eq.${ctx.user.id}&limit=1`
+      `select=avatar_path,preferred_name,phone,bio,emergency_contact&account_id=eq.${ctx.user.id}&limit=1`
     );
     const row = rows[0];
     return row
       ? {
+          avatarUrl: row.avatar_path
+            ? await signedStaffAvatarUrl(row.avatar_path)
+            : null,
           preferredName: row.preferred_name ?? "",
           phone: row.phone ?? "",
           bio: row.bio ?? "",
           emergencyContact: row.emergency_contact ?? "",
         }
-      : { preferredName: "", phone: "", bio: "", emergencyContact: "" };
+      : {
+          avatarUrl: null,
+          preferredName: "",
+          phone: "",
+          bio: "",
+          emergencyContact: "",
+        };
   }),
   updateProfile: protectedProcedure
     .input(
@@ -450,6 +511,72 @@ export const staffRouter = router({
         });
       return { success: true };
     }),
+  uploadAvatar: protectedProcedure
+    .input(
+      z.object({
+        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+        base64: z.string().min(100).max(7000000),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const extension =
+        input.mimeType === "image/jpeg"
+          ? "jpg"
+          : input.mimeType === "image/png"
+            ? "png"
+            : "webp";
+      const bytes = Buffer.from(input.base64, "base64");
+      if (!bytes.length || bytes.length > 5 * 1024 * 1024)
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "ფოტო უნდა იყოს 5 MB-ზე ნაკლები.",
+        });
+      const path = avatarPathForUser(ctx.user.openId, extension);
+      const current = await supabase<Pick<ProfileDetailsRow, "avatar_path">[]>(
+        "tiflisi_profile_details",
+        `select=avatar_path&account_id=eq.${ctx.user.id}&limit=1`
+      );
+      await uploadStaffAvatar(path, bytes, input.mimeType);
+      if (current[0]?.avatar_path && current[0].avatar_path !== path) {
+        await removeStaffAvatar(current[0].avatar_path);
+      }
+      const rows = await supabase<ProfileDetailsRow[]>(
+        "tiflisi_profile_details",
+        "on_conflict=account_id",
+        {
+          method: "POST",
+          prefer: "resolution=merge-duplicates,return=representation",
+          body: {
+            account_id: ctx.user.id,
+            avatar_path: path,
+            updated_at: new Date().toISOString(),
+          },
+        }
+      );
+      if (!rows[0])
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "ფოტოს ბმული ვერ შეინახა.",
+        });
+      return { avatarUrl: await signedStaffAvatarUrl(path) };
+    }),
+  deleteAvatar: protectedProcedure.mutation(async ({ ctx }) => {
+    const current = await supabase<Pick<ProfileDetailsRow, "avatar_path">[]>(
+      "tiflisi_profile_details",
+      `select=avatar_path&account_id=eq.${ctx.user.id}&limit=1`
+    );
+    if (current[0]?.avatar_path) await removeStaffAvatar(current[0].avatar_path);
+    await supabase("tiflisi_profile_details", "on_conflict=account_id", {
+      method: "POST",
+      prefer: "resolution=merge-duplicates,return=representation",
+      body: {
+        account_id: ctx.user.id,
+        avatar_path: null,
+        updated_at: new Date().toISOString(),
+      },
+    });
+    return { success: true };
+  }),
   announcements: protectedProcedure.query(async () => {
     const now = new Date().toISOString();
     const rows = await supabase<AnnouncementRow[]>(

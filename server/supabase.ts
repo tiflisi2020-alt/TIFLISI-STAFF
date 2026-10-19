@@ -1,4 +1,5 @@
 export const SUPABASE_URL = "https://bbroknpeebjuilycutjd.supabase.co";
+export const STAFF_AVATAR_BUCKET = "staff-avatars";
 
 export async function supabase<T>(
   table: string,
@@ -31,6 +32,66 @@ export async function supabase<T>(
   }
   const text = await response.text();
   return (text ? JSON.parse(text) : null) as T;
+}
+
+function storagePath(path: string) {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
+async function storageResponse(path: string, options: RequestInit = {}) {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error("Supabase სერვერული გასაღები არ არის დამატებული.");
+  const response = await fetch(
+    `${SUPABASE_URL}/storage/v1/${path}`,
+    {
+      ...options,
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        ...(options.headers ?? {}),
+      },
+      signal: AbortSignal.timeout(15000),
+    }
+  );
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Supabase Storage-ის შეცდომა (${response.status})${detail ? `: ${detail}` : "."}`);
+  }
+  return response;
+}
+
+export async function uploadStaffAvatar(
+  path: string,
+  bytes: Uint8Array,
+  contentType: string
+) {
+  await storageResponse(`object/${STAFF_AVATAR_BUCKET}/${storagePath(path)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": contentType,
+      "x-upsert": "true",
+    },
+    body: bytes as unknown as BodyInit,
+  });
+}
+
+export async function removeStaffAvatar(path: string) {
+  await storageResponse(`object/${STAFF_AVATAR_BUCKET}/${storagePath(path)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function signedStaffAvatarUrl(path: string, expiresIn = 3600) {
+  const response = await storageResponse(
+    `object/sign/${STAFF_AVATAR_BUCKET}/${storagePath(path)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expiresIn }),
+    }
+  );
+  const data = (await response.json()) as { signedURL?: string };
+  return data.signedURL ? `${SUPABASE_URL}/storage/v1${data.signedURL}` : null;
 }
 
 export const departments = {

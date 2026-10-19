@@ -99,7 +99,7 @@ export default function Team() {
             return (
               <article className="person-card" key={person.id}>
                 <div className="person-top">
-                  <Avatar name={person.name} size="large" />
+                  <Avatar name={person.name} src={person.avatarUrl} size="large" />
                   <span className={`person-status ${working ? "working" : ""}`}>
                     <i />
                     {working ? "დღეს მუშაობს" : "გუნდის წევრი"}

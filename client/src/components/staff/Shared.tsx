@@ -8,9 +8,11 @@ import {
 
 export function Avatar({
   name,
+  src,
   size = "normal",
 }: {
   name: string;
+  src?: string | null;
   size?: "small" | "normal" | "large";
 }) {
   const initials = name
@@ -23,9 +25,9 @@ export function Avatar({
   return (
     <span
       className={`avatar avatar-${color} avatar-${size}`}
-      aria-hidden="true"
+      aria-label={`${name}-ის ფოტო`}
     >
-      {initials || "ტ"}
+      {src ? <img src={src} alt="" /> : initials || "ტ"}
     </span>
   );
 }
@@ -60,7 +62,7 @@ export function ShiftCard({
   return (
     <article className={`shift-card ${mine ? "is-mine" : ""}`}>
       <div className="shift-person">
-        <Avatar name={shift.name} />
+        <Avatar name={shift.name} src={staff?.avatarUrl} />
         <div>
           <strong>{shift.name}</strong>
           <span>{staff?.role ?? "თანამშრომელი"}</span>
