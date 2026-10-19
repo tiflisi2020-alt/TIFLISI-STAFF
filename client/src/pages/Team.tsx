@@ -44,7 +44,6 @@ export default function Team() {
           placeholder="მოძებნე თანამშრომელი…"
           aria-label="თანამშრომლის ძიება"
         />
-        <kbd>ძებნა</kbd>
       </div>
       <div className="department-tabs">
         {[["all", "ყველა"] as const, ...departmentIds.map(id => [id, departmentLabels[id]] as const)].map(
@@ -77,18 +76,25 @@ export default function Team() {
         <div className="loading-grid">
           <div className="loading-card" />
           <div className="loading-card" />
+          <div className="loading-card" />
         </div>
       ) : visible.length ? (
         <div className="team-grid">
           {visible.map(person => {
-            const shift = (upcoming.data ?? [])
+            const shift = upcoming.isLoading || upcoming.isError
+              ? undefined
+              : (upcoming.data ?? [])
               .filter(
                 s =>
                   s.name === person.name &&
                   s.department === person.department &&
                   isWorking(s.time)
               )
-              .sort((a, b) => a.date.localeCompare(b.date))[0];
+              .sort((a, b) => {
+                const aStart = a.time.match(/\d{1,2}:\d{2}/)?.[0] ?? "23:59";
+                const bStart = b.time.match(/\d{1,2}:\d{2}/)?.[0] ?? "23:59";
+                return `${a.date}T${aStart}`.localeCompare(`${b.date}T${bStart}`);
+              })[0];
             const working = shift?.date === today;
             return (
               <article className="person-card" key={person.id}>
@@ -103,7 +109,11 @@ export default function Team() {
                 <p>{person.role}</p>
                 <div className="person-next">
                   <span>
-                    {shift
+                    {upcoming.isLoading
+                      ? "ცვლები იტვირთება…"
+                      : upcoming.isError
+                        ? "ცვლა ვერ ჩაიტვირთა"
+                        : shift
                       ? working
                         ? "დღევანდელი ცვლა"
                         : "უახლოესი ცვლა"
@@ -128,10 +138,6 @@ export default function Team() {
           description="შეცვალე საძიებო სიტყვა ან აირჩიე სხვა დეპარტამენტი."
         />
       )}
-      <div className="info-strip">
-        <Users size={17} />
-        <p>გუნდის მონაცემები არსებულ Supabase ცხრილებთან არის დაკავშირებული.</p>
-      </div>
     </>
   );
 }

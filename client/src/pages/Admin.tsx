@@ -246,41 +246,6 @@ export default function Admin() {
           </p>
         </div>
       </div>
-      <div className="admin-quick-actions" aria-label="სწრაფი მოქმედებები">
-        <button
-          type="button"
-          className="admin-quick-action"
-          onClick={() => setTab("schedule")}
-        >
-          <CalendarDays size={20} />
-          <span>
-            <b>განრიგის შეცვლა</b>
-            <small>აირჩიე თანამშრომელი და დღე</small>
-          </span>
-        </button>
-        <button
-          type="button"
-          className="admin-quick-action"
-          onClick={() => setTab("employees")}
-        >
-          <UserRoundPlus size={20} />
-          <span>
-            <b>თანამშრომლის დამატება</b>
-            <small>მართე გუნდის წევრები</small>
-          </span>
-        </button>
-        <button
-          type="button"
-          className={`admin-quick-action${requests.data?.length ? " has-alert" : ""}`}
-          onClick={() => setTab("requests")}
-        >
-          <Check size={20} />
-          <span>
-            <b>მოთხოვნების ნახვა</b>
-            <small>{requests.data?.length ? `${requests.data.length} ელოდება პასუხს` : "ყველაფერი მოწესრიგებულია"}</small>
-          </span>
-        </button>
-      </div>
       <div className="admin-tabs">
         <button
           className={tab === "schedule" ? "active" : ""}
@@ -320,8 +285,8 @@ export default function Admin() {
             <div>
               <b>ჩანაცვლება ელოდება დადასტურებას</b>
               <p>
-                ღილაკი აქვე, ჩანართ „დადასტურებაშია“. დამტკიცების შემდეგ
-                ისვენებს კოლეგა ცვლაზე ჩაჯდება.
+                მოთხოვნა ჩანართში „მოთხოვნები“ დადასტურდება. დამტკიცების შემდეგ
+                არჩეული კოლეგა შენს ნაცვლად გამოვა.
               </p>
             </div>
             <button
@@ -532,7 +497,7 @@ export default function Admin() {
             </div>
             </>
           )}
-          <form onSubmit={submit} className="admin-edit-form">
+          {roster.length > 0 && <form onSubmit={submit} className="admin-edit-form">
             <div className="section-title">
               <h2>
                 {person
@@ -584,16 +549,6 @@ export default function Admin() {
                   maxLength={100}
                 />
               </label>
-              <label>
-                სხვა დაწყების საათი
-                <input
-                  type="time"
-                  value={time === "OFF" ? "" : time.padStart(5, "0")}
-                  onChange={e => {
-                    if (e.target.value) setTime(e.target.value);
-                  }}
-                />
-              </label>
             </div>
             <label>
               შენიშვნა
@@ -632,7 +587,7 @@ export default function Admin() {
                 ცვლა ვერ ჩაიტვირთა. შენახვა უსაფრთხოებისთვის გამორთულია.
               </p>
             )}
-          </form>
+          </form>}
           <div className="info-strip">
             <CalendarDays size={16} />
             <p>

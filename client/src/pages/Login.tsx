@@ -35,7 +35,11 @@ export default function Login() {
   });
   const isResetPath = window.location.pathname === "/reset-password";
   const [mode, setMode] = useState<Mode>(
-    isResetPath && incoming.token ? "reset" : "login"
+    isResetPath && incoming.token && incoming.type === "recovery"
+      ? "reset"
+      : isResetPath
+        ? "recover"
+        : "login"
   );
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -49,16 +53,22 @@ export default function Login() {
   useEffect(() => {
     if (window.location.hash)
       window.history.replaceState(null, "", window.location.pathname);
-    if (incoming.error) {
-      setError("ბმული ვადაგასულია ან არასწორია. მოითხოვე ახალი წერილი.");
-      return;
-    }
     if (isResetPath) {
-      if (!incoming.token) {
+      if (incoming.error || !incoming.token || incoming.type !== "recovery") {
         setMode("recover");
-        setMessage(
-          "პაროლის შეცვლას მოქმედი აღდგენის ბმული სჭირდება. მოითხოვე ახალი წერილი."
-        );
+        if (incoming.error) {
+          setError("ბმული ვადაგასულია ან არასწორია. მოითხოვე ახალი წერილი.");
+        }
+        if (!incoming.token || incoming.type !== "recovery") {
+          setMessage(
+            "პაროლის შეცვლას მოქმედი აღდგენის ბმული სჭირდება. მოითხოვე ახალი წერილი."
+          );
+        }
+      } else {
+        setMode("reset");
+      }
+      if (!incoming.token || incoming.type !== "recovery") {
+        setMode("recover");
       }
       return;
     }
@@ -81,6 +91,7 @@ export default function Login() {
     setMode(next);
     setError("");
     setMessage("");
+    setShowPassword(false);
     setPassword("");
     setConfirmation("");
   }
@@ -114,6 +125,7 @@ export default function Login() {
         });
         setMessage(data.message ?? "პაროლი განახლებულია.");
         setMode("login");
+        window.history.replaceState(null, "", "/login");
         setPassword("");
         setConfirmation("");
       }
@@ -150,12 +162,20 @@ export default function Login() {
         : mode === "reset"
           ? "ახალი პაროლი"
           : "ანგარიშში შესვლა";
+  const description =
+    mode === "signup"
+      ? "შექმენი თანამშრომლის ანგარიში ელფოსტის დადასტურებით."
+      : mode === "recover"
+        ? "ელფოსტაზე გამოგიგზავნით პაროლის აღდგენის ბმულს."
+        : mode === "reset"
+          ? "მიუთითე ახალი პაროლი მოქმედი აღდგენის ბმულით."
+          : "უსაფრთხოდ შედი ტიფლისის გუნდის სივრცეში.";
   return (
     <>
       <PageHeading
         eyebrow="შენი სამუშაო სივრცე"
         title={title}
-        description="უსაფრთხო შესვლა ელფოსტით — პირდაპირ ტიფლისის საიტზე."
+        description={description}
       />
       <section className="auth-card">
         <div className="auth-emblem">

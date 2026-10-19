@@ -62,17 +62,6 @@ export default function Layout({ children }: { children: ReactNode }) {
       utils.admin.requests.invalidate(),
     ]);
   };
-  const respond = trpc.staff.respondSwap.useMutation({
-    onSuccess: async (_data, variables) => {
-      toast.success(
-        variables.status === "approved"
-          ? "დაადასტურე. ეს ცვლა ახლა შენია."
-          : "მოთხოვნა უარყოფილია."
-      );
-      await refreshAfterDecision();
-    },
-    onError: error => toast.error(error.message),
-  });
   const reviewRequest = trpc.admin.reviewRequest.useMutation({
     onSuccess: async (_data, variables) => {
       toast.success(
@@ -84,7 +73,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     },
     onError: error => toast.error(error.message),
   });
-  const deciding = respond.isPending || reviewRequest.isPending;
+  const deciding = reviewRequest.isPending;
   const isManager = auth.user?.role === "admin";
   const weekAgo = Date.now() - 7 * 86400000;
   const review = isManager ? (notices.data?.review ?? []) : [];
@@ -97,6 +86,18 @@ export default function Layout({ children }: { children: ReactNode }) {
   );
   const incoming = isManager ? [] : (notices.data?.incoming ?? []);
   const noticeCount = incoming.length + review.length + outgoing.length;
+  const pageLabel =
+    location === "/admin"
+      ? "ადმინისტრაცია"
+      : location === "/team"
+        ? "გუნდი"
+        : location === "/profile"
+          ? "პროფილი"
+          : location === "/swap"
+            ? "ცვლის ჩანაცვლება"
+            : location === "/schedule"
+              ? "განრიგი"
+              : "მთავარი";
   return (
     <div className="app-layout">
       <aside className="sidebar">
@@ -168,7 +169,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <Brand />
           </div>
           <div className="breadcrumb">
-            რესტორანი ტიფლისი <span>/</span> <b>თანამშრომლების განრიგი</b>
+            რესტორანი ტიფლისი <span>/</span> <b>{pageLabel}</b>
           </div>
           <div className="header-actions">
             <span className="header-date">
@@ -288,36 +289,20 @@ export default function Layout({ children }: { children: ReactNode }) {
                 </div>
               ))}
               {incoming.map(item => (
-                <div key={`in-${item.id}`} className="notice-item">
+                <Link
+                  key={`in-${item.id}`}
+                  href="/profile"
+                  className="notice-item"
+                  onClick={() => setNotifications(false)}
+                >
                   <b>{item.requester_name} გთხოვს ჩანაცვლებას</b>
                   <span>
                     მის ნაცვლად გამოსვლა ·{" "}
                     <GeorgianDate date={item.own_date} short /> ·{" "}
                     {prettyTime(item.own_time)}
                   </span>
-                  <div className="notice-actions">
-                    <button
-                      type="button"
-                      className="notice-confirm"
-                      disabled={deciding}
-                      onClick={() =>
-                        respond.mutate({ id: item.id, status: "approved" })
-                      }
-                    >
-                      <Check size={14} /> ვადასტურებ
-                    </button>
-                    <button
-                      type="button"
-                      className="notice-decline"
-                      disabled={deciding}
-                      onClick={() =>
-                        respond.mutate({ id: item.id, status: "rejected" })
-                      }
-                    >
-                      უარს ვამბობ
-                    </button>
-                  </div>
-                </div>
+                  <small>გახსენი პროფილი დასადასტურებლად</small>
+                </Link>
               ))}
               {outgoing.map(item => (
                 <Link

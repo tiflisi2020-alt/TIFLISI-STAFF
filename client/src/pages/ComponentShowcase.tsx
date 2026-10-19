@@ -159,7 +159,6 @@ import {
 } from "@/components/ui/tooltip";
 import { useTheme } from "@/contexts/ThemeContext";
 import { format } from "date-fns";
-import { zhCN } from "date-fns/locale";
 import {
   AlertCircle,
   CalendarIcon,
@@ -172,6 +171,16 @@ import {
 import { useState } from "react";
 import { toast as sonnerToast } from "sonner";
 import { AIChatBox, type Message } from "@/components/AIChatBox";
+
+const frameworks = [
+  { value: "react", label: "React" },
+  { value: "vue", label: "Vue" },
+  { value: "angular", label: "Angular" },
+  { value: "svelte", label: "Svelte" },
+  { value: "nextjs", label: "Next.js" },
+  { value: "nuxt", label: "Nuxt" },
+  { value: "remix", label: "Remix" },
+];
 
 export default function ComponentsShowcase() {
   const { theme, toggleTheme } = useTheme();
@@ -233,7 +242,13 @@ export default function ComponentsShowcase() {
           <h2 className="text-3xl font-bold tracking-tight mb-6">
             Shadcn/ui Component Library
           </h2>
-          <Button variant="outline" size="icon" onClick={toggleTheme}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label={theme === "light" ? "მუქი თემის ჩართვა" : "ნათელი თემის ჩართვა"}
+            title={theme === "light" ? "მუქი თემა" : "ნათელი თემა"}
+          >
             {theme === "light" ? (
               <Moon className="h-5 w-5" />
             ) : (
@@ -482,7 +497,7 @@ export default function ComponentsShowcase() {
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {datePickerDate ? (
-                          format(datePickerDate, "PPP HH:mm", { locale: zhCN })
+                          format(datePickerDate, "PPP HH:mm")
                         ) : (
                           <span>Select date and time</span>
                         )}
@@ -509,13 +524,19 @@ export default function ComponentsShowcase() {
                                   : "00:00"
                               }
                               onChange={e => {
-                                const [hours, minutes] =
-                                  e.target.value.split(":");
+                                if (!e.target.value) return;
+                                const [hours, minutes] = e.target.value.split(":");
+                                const parsedHours = Number(hours);
+                                const parsedMinutes = Number(minutes);
+                                if (
+                                  !Number.isInteger(parsedHours) ||
+                                  !Number.isInteger(parsedMinutes)
+                                ) return;
                                 const newDate = datePickerDate
                                   ? new Date(datePickerDate)
                                   : new Date();
-                                newDate.setHours(parseInt(hours));
-                                newDate.setMinutes(parseInt(minutes));
+                                newDate.setHours(parsedHours);
+                                newDate.setMinutes(parsedMinutes);
                                 setDatePickerDate(newDate);
                               }}
                             />
@@ -527,9 +548,7 @@ export default function ComponentsShowcase() {
                   {datePickerDate && (
                     <p className="text-sm text-muted-foreground">
                       Selected:{" "}
-                      {format(datePickerDate, "yyyy/MM/dd  HH:mm", {
-                        locale: zhCN,
-                      })}
+                      {format(datePickerDate, "yyyy/MM/dd HH:mm")}
                     </p>
                   )}
                 </div>
@@ -544,17 +563,9 @@ export default function ComponentsShowcase() {
                         className="w-full justify-between"
                       >
                         {selectedFramework
-                          ? [
-                              { value: "react", label: "React" },
-                              { value: "vue", label: "Vue" },
-                              { value: "angular", label: "Angular" },
-                              { value: "svelte", label: "Svelte" },
-                              { value: "nextjs", label: "Next.js" },
-                              { value: "nuxt", label: "Nuxt" },
-                              { value: "remix", label: "Remix" },
-                            ].find(fw => fw.value === selectedFramework)?.label
+                          ? frameworks.find(fw => fw.value === selectedFramework)?.label
                           : "Select framework..."}
-                        <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        <span aria-hidden="true" className="ml-2 opacity-50">⌄</span>
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0">
@@ -563,15 +574,7 @@ export default function ComponentsShowcase() {
                         <CommandList>
                           <CommandEmpty>No framework found</CommandEmpty>
                           <CommandGroup>
-                            {[
-                              { value: "react", label: "React" },
-                              { value: "vue", label: "Vue" },
-                              { value: "angular", label: "Angular" },
-                              { value: "svelte", label: "Svelte" },
-                              { value: "nextjs", label: "Next.js" },
-                              { value: "nuxt", label: "Nuxt" },
-                              { value: "remix", label: "Remix" },
-                            ].map(framework => (
+                            {frameworks.map(framework => (
                               <CommandItem
                                 key={framework.value}
                                 value={framework.value}
@@ -602,17 +605,7 @@ export default function ComponentsShowcase() {
                   {selectedFramework && (
                     <p className="text-sm text-muted-foreground">
                       Selected:{" "}
-                      {
-                        [
-                          { value: "react", label: "React" },
-                          { value: "vue", label: "Vue" },
-                          { value: "angular", label: "Angular" },
-                          { value: "svelte", label: "Svelte" },
-                          { value: "nextjs", label: "Next.js" },
-                          { value: "nuxt", label: "Nuxt" },
-                          { value: "remix", label: "Remix" },
-                        ].find(fw => fw.value === selectedFramework)?.label
-                      }
+                      {frameworks.find(fw => fw.value === selectedFramework)?.label}
                     </p>
                   )}
                 </div>
@@ -669,7 +662,7 @@ export default function ComponentsShowcase() {
                   </div>
                   {selectedMonth && selectedYear && (
                     <p className="text-sm text-muted-foreground">
-                      Selected: {selectedYear}/{selectedMonth}/
+                      Selected: {selectedYear}/{selectedMonth}
                     </p>
                   )}
                 </div>
@@ -1220,7 +1213,7 @@ export default function ComponentsShowcase() {
                 <div className="space-y-2">
                   <Label>Toggle</Label>
                   <div className="flex gap-2">
-                    <Toggle aria-label="Toggle italic">
+                    <Toggle aria-label="Toggle bold">
                       <span className="font-bold">B</span>
                     </Toggle>
                     <Toggle aria-label="Toggle italic">

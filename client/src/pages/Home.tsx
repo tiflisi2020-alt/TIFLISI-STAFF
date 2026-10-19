@@ -18,6 +18,11 @@ import {
   PageHeading,
 } from "@/components/staff/Shared";
 
+function shiftSortKey(shift: { date: string; time: string }) {
+  const start = shift.time.match(/\d{1,2}:\d{2}/)?.[0] ?? "23:59";
+  return `${shift.date}T${start.padStart(5, "0")}`;
+}
+
 export default function Home() {
   const {
     selected,
@@ -44,12 +49,13 @@ export default function Home() {
         s.department === selected?.department &&
         isWorking(s.time)
     )
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => shiftSortKey(a).localeCompare(shiftSortKey(b)));
   const next = mine[0];
   const colleagues = next
     ? (upcoming.data ?? []).filter(
         s =>
           s.date === next.date &&
+          s.time === next.time &&
           isWorking(s.time) &&
           !(s.name === next.name && s.department === next.department)
       )
@@ -172,21 +178,27 @@ export default function Home() {
               <span className="stat-icon">
                 <CalendarDays size={19} />
               </span>
-              <strong>{weekQuery.isLoading ? "—" : weekShifts.length}</strong>
+              <strong>
+                {weekQuery.isLoading || weekQuery.isError ? "—" : weekShifts.length}
+              </strong>
               <span>დაგეგმილი ცვლა</span>
             </div>
             <div className="stat-card">
               <span className="stat-icon">
                 <Clock3 size={19} />
               </span>
-              <strong>{weekQuery.isLoading ? "—" : activeDays}</strong>
+              <strong>
+                {weekQuery.isLoading || weekQuery.isError ? "—" : activeDays}
+              </strong>
               <span>სამუშაო დღე</span>
             </div>
             <div className="stat-card">
               <span className="stat-icon">
                 <Coffee size={19} />
               </span>
-              <strong>{weekQuery.isLoading ? "—" : 7 - activeDays}</strong>
+              <strong>
+                {weekQuery.isLoading || weekQuery.isError ? "—" : 7 - activeDays}
+              </strong>
               <span>ცვლის გარეშე</span>
             </div>
           </div>
@@ -208,7 +220,10 @@ export default function Home() {
         <div className="overview-days">
           {days.map(d => {
             const key = dateKey(d);
-            const shift = weekShifts.find(s => s.date === key);
+            const dayShifts = weekShifts
+              .filter(s => s.date === key)
+              .sort((a, b) => shiftSortKey(a).localeCompare(shiftSortKey(b)));
+            const shift = dayShifts[0];
             return (
               <Link
                 href="/schedule"
@@ -224,7 +239,9 @@ export default function Home() {
                 </div>
                 <b>{String(d.getDate()).padStart(2, "0")}</b>
                 <span className="day-shift">
-                  {shift ? prettyTime(shift.time) : "ცვლის გარეშე"}
+                  {shift
+                    ? `${prettyTime(shift.time)}${dayShifts.length > 1 ? ` +${dayShifts.length - 1}` : ""}`
+                    : "ცვლის გარეშე"}
                 </span>
                 <i />
               </Link>
@@ -236,11 +253,13 @@ export default function Home() {
         <section className="next-panel">
           <div className="section-title">
             <h2>შემდეგი ცვლები</h2>
-            <Link href="/schedule" className="text-link">
-              ყველას ნახვა <ArrowRight size={16} />
-            </Link>
           </div>
-          {mine.length ? (
+          {upcoming.isError ? (
+            <EmptyState
+              title="განრიგი ვერ ჩაიტვირთა"
+              description="ხელახლა ცადე მონაცემების ჩატვირთვა ზემოთ მოცემული ღილაკით."
+            />
+          ) : mine.length ? (
             mine.slice(0, 3).map(shift => (
               <Link
                 key={shift.id}
@@ -291,7 +310,7 @@ export default function Home() {
             {staff.slice(0, 5).map(s => (
               <Avatar key={s.id} name={s.name} size="small" />
             ))}
-            <span>+{Math.max(0, staff.length - 5)}</span>
+            {staff.length > 5 && <span>+{staff.length - 5}</span>}
           </div>
           <Link href="/team" className="secondary-button">
             გუნდის ნახვა <ArrowRight size={17} />

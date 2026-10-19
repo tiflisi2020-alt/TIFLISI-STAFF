@@ -36,6 +36,11 @@ export default function Schedule() {
   const data = (weekQuery.data ?? []).filter(
     s => s.date === day && isWorking(s.time)
   );
+  const weekEnd = addDays(week, 6);
+  const monthLabel =
+    week.getMonth() === weekEnd.getMonth()
+      ? week.toLocaleDateString("ka-GE", { month: "long", year: "numeric" })
+      : `${week.toLocaleDateString("ka-GE", { month: "short" })} – ${weekEnd.toLocaleDateString("ka-GE", { month: "long", year: "numeric" })}`;
   const visible = data.filter(s =>
     mode === "mine"
       ? s.name === selected?.name && s.department === selected?.department
@@ -102,10 +107,7 @@ export default function Schedule() {
         <div className="month-heading">
           <h2>
             <CalendarDays size={18} />
-            {week.toLocaleDateString("ka-GE", {
-              month: "long",
-              year: "numeric",
-            })}
+            {monthLabel}
           </h2>
           <div>
             <button className="today-button" onClick={resetWeek}>
@@ -134,9 +136,10 @@ export default function Schedule() {
               s =>
                 s.date === key &&
                 isWorking(s.time) &&
-                (mode === "all" ||
-                  (s.name === selected?.name &&
-                    s.department === selected?.department))
+                (mode === "all"
+                  ? department === "all" || s.department === department
+                  : s.name === selected?.name &&
+                    s.department === selected?.department)
             );
             return (
               <button
@@ -184,8 +187,8 @@ export default function Schedule() {
                 s => s.name === shift.name && s.department === shift.department
               )}
               mine={
-                shift.name === selected?.name &&
-                shift.department === selected?.department
+                shift.name === myStaff?.name &&
+                shift.department === myStaff?.department
               }
               onSwap={
                 shift.name === myStaff?.name &&

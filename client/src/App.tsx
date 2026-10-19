@@ -21,19 +21,23 @@ export default function App() {
         <TooltipProvider>
           <Toaster />
           <StaffProvider>
-            <Layout>
-              <Switch>
-                <Route path="/" component={Home} />
-                <Route path="/schedule" component={Schedule} />
-                <Route path="/team" component={Team} />
-                <Route path="/profile" component={Profile} />
-                <Route path="/swap" component={Swap} />
-                <Route path="/admin" component={Admin} />
-                <Route path="/login" component={Login} />
-                <Route path="/reset-password" component={Login} />
-                <Route component={NotFound} />
-              </Switch>
-            </Layout>
+            <Switch>
+              <Route path="/login" component={Login} />
+              <Route path="/reset-password" component={Login} />
+              <Route>
+                <Layout>
+                  <Switch>
+                    <Route path="/" component={Home} />
+                    <Route path="/schedule" component={Schedule} />
+                    <Route path="/team" component={Team} />
+                    <Route path="/profile" component={Profile} />
+                    <Route path="/swap" component={Swap} />
+                    <Route path="/admin" component={Admin} />
+                    <Route component={NotFound} />
+                  </Switch>
+                </Layout>
+              </Route>
+            </Switch>
           </StaffProvider>
         </TooltipProvider>
       </ThemeProvider>

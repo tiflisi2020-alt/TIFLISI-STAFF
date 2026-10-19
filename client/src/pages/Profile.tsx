@@ -115,8 +115,12 @@ export default function Profile() {
     <>
       <PageHeading
         eyebrow="შენი სივრცე"
-        title="ჩემი პროფილი"
-        description="ანგარიში, სამუშაო ინფორმაცია და ცვლების გაცვლის მოთხოვნები."
+        title={myStaff ? "ჩემი პროფილი" : "პროფილი"}
+        description={
+          myStaff
+            ? "ანგარიში, სამუშაო ინფორმაცია და ცვლების გაცვლის მოთხოვნები."
+            : "არჩეული თანამშრომლის სამუშაო ინფორმაცია და განრიგი."
+        }
         action={
           auth.user ? (
             <button
@@ -239,11 +243,6 @@ export default function Profile() {
           </Link>
         </section>
       </div>
-      {auth.user?.role === "admin" && (
-        <Link href="/admin" className="primary-button admin-profile-link">
-          <ShieldCheck size={17} /> ადმინისტრაციის სამართავი გვერდი
-        </Link>
-      )}
       {auth.user?.role === "admin" && (
         <section className="manager-panel">
           <div className="section-title">

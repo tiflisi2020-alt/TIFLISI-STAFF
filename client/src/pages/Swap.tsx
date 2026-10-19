@@ -148,7 +148,9 @@ export default function Swap() {
                 }}
                 required
               >
-                <option value="">აირჩიე შენი ცვლა</option>
+                <option value="">
+                  {upcoming.isLoading ? "ცვლები იტვირთება…" : "აირჩიე შენი ცვლა"}
+                </option>
                 {ownOptions.map(s => (
                   <option value={s.id} key={s.id}>
                     {shiftLabel(s)}
@@ -246,7 +248,7 @@ export default function Swap() {
                 </button>
               </p>
             )}
-            {!upcoming.isLoading && !ownOptions.length && (
+            {!upcoming.isLoading && !upcoming.isError && !ownOptions.length && (
               <p className="form-error">
                 მომდევნო ოთხ კვირაში შენი ცვლა არ არის დაგეგმილი.
               </p>
@@ -273,11 +275,6 @@ export default function Swap() {
                 ? "მოთხოვნა იგზავნება…"
                 : "მოთხოვნის გაგზავნა"}
             </button>
-            <p className="form-footnote">
-              მოთხოვნა განრიგს მაშინვე არ ცვლის. კოლეგა ზარში ან პროფილში
-              დაადასტურებს, რომ გამოვა შენს ნაცვლად. მენეჯერსაც შეუძლია
-              დაადასტუროს.
-            </p>
           </form>
           <aside className="swap-guide">
             <span className="guide-icon">
