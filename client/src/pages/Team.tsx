@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
-import { ArrowUpRight, Search, Users } from "lucide-react";
+import { ArrowUpRight, Phone, Search, Users } from "lucide-react";
 import {
   departmentIds,
   departmentLabels,
@@ -11,6 +11,11 @@ import {
 import { useStaff } from "@/contexts/StaffContext";
 import { Avatar, EmptyState, PageHeading } from "@/components/staff/Shared";
 import { TeamSkeleton } from "@/components/staff/Skeletons";
+
+function dialablePhone(phone: string) {
+  const compact = phone.trim().replace(/[^\d+]/g, "").replace(/(?!^)\+/g, "");
+  return compact.replace(/\D/g, "").length >= 6 ? compact : "";
+}
 
 export default function Team() {
   const { staff, selectStaff, upcoming, today, roster } = useStaff();
@@ -93,6 +98,8 @@ export default function Team() {
                 return `${a.date}T${aStart}`.localeCompare(`${b.date}T${bStart}`);
               })[0];
             const working = shift?.date === today;
+            const phone = person.phone?.trim() ?? "";
+            const dial = dialablePhone(phone);
             return (
               <article className="person-card" key={person.id}>
                 <div className="person-top">
@@ -119,6 +126,21 @@ export default function Team() {
                   ) : (
                     <b>{shift ? prettyTime(shift.time) : "—"}</b>
                   )}
+                </div>
+                <div className="person-contact">
+                  <span className={phone ? "person-number" : "person-number is-empty"}>
+                    {phone || "ნომერი არ არის"}
+                  </span>
+                  {dial ? (
+                    <a
+                      className="person-call"
+                      href={`tel:${dial}`}
+                      aria-label={`${person.name}-ს დარეკვა`}
+                    >
+                      <Phone size={15} />
+                      დარეკვა
+                    </a>
+                  ) : null}
                 </div>
                 <Link
                   href="/schedule"

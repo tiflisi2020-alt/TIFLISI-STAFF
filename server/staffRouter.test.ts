@@ -158,6 +158,21 @@ describe("staff authorization and swap validation", () => {
     const roster = await caller(null).roster();
     expect(roster.map(person => person.name)).toEqual(["Staff A"]);
   });
+  it("shares phone numbers only with signed-in staff", async () => {
+    mock.mockImplementation(async table => {
+      if (table === "waiters")
+        return [{ id: 1, name: "Staff A", phone: " 555 11 22 33 " }];
+      return [];
+    });
+    const signedIn = await caller().roster();
+    expect(signedIn.find(person => person.name === "Staff A")?.phone).toBe(
+      "555 11 22 33"
+    );
+    const anonymous = await caller(null).roster();
+    expect(anonymous.find(person => person.name === "Staff A")?.phone).toBe(
+      ""
+    );
+  });
   it("writes a pending request only after verifying both real shifts", async () => {
     mock.mockImplementation(async (table, _query, options) => {
       if (table === "tiflisi_accounts")

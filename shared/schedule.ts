@@ -4,6 +4,7 @@ export type Staff = {
   department: string;
   role: string;
   avatarUrl?: string | null;
+  phone?: string;
 };
 export type Shift = {
   id: string;

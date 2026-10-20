@@ -47,6 +47,7 @@ export function useAuth(options?: UseAuthOptions) {
       } catch {}
       utils.auth.me.setData(undefined, null);
       await Promise.all([
+        utils.staff.roster.reset(),
         utils.staff.profile.reset(),
         utils.staff.incoming.reset(),
         utils.staff.requests.reset(),

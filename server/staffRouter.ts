@@ -137,15 +137,18 @@ export async function getStaff(): Promise<Staff[]> {
   const [batches, inactive] = await Promise.all([
     Promise.all(
       Object.entries(departments).map(async ([department, config]) => {
-        const rows = await supabase<{ id: string | number; name: string }[]>(
+        const rows = await supabase<
+          { id: string | number; name: string; phone: string | null }[]
+        >(
           department,
-          "select=id,name&order=position_order.asc,name.asc&limit=500"
+          "select=id,name,phone&order=position_order.asc,name.asc&limit=500"
         );
         return rows.map(row => ({
           id: `${department}:${row.id}`,
           name: row.name,
           department,
           role: config.role,
+          phone: row.phone?.trim() ?? "",
         }));
       })
     ),
@@ -429,7 +432,11 @@ function avatarPathForUser(openId: string, extension: "jpg" | "png" | "webp") {
 }
 
 export const staffRouter = router({
-  roster: publicProcedure.query(getStaff),
+  roster: publicProcedure.query(async ({ ctx }) => {
+    const people = await getStaff();
+    if (ctx.user) return people;
+    return people.map(person => ({ ...person, phone: "" }));
+  }),
   shifts: publicProcedure
     .input(
       z
