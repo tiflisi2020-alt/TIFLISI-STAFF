@@ -62,6 +62,7 @@ export type Announcement = {
   publishedAt: string;
   expiresAt: string | null;
   createdAt: string;
+  createdBy: number | null;
 };
 type AnnouncementRow = {
   id: string;
@@ -72,9 +73,10 @@ type AnnouncementRow = {
   published_at: string;
   expires_at: string | null;
   created_at: string;
+  created_by: number | null;
 };
 const announcementFields =
-  "id,title,body,kind,is_pinned,published_at,expires_at,created_at";
+  "id,title,body,kind,is_pinned,published_at,expires_at,created_at,created_by";
 function asAnnouncement(row: AnnouncementRow): Announcement {
   return {
     id: row.id,
@@ -85,6 +87,7 @@ function asAnnouncement(row: AnnouncementRow): Announcement {
     publishedAt: row.published_at,
     expiresAt: row.expires_at,
     createdAt: row.created_at,
+    createdBy: row.created_by ?? null,
   };
 }
 type ProfileDetailsRow = {
@@ -713,13 +716,13 @@ export const staffRouter = router({
     const [outgoing, asked, pending, announcementRows] = await Promise.all([
       supabase<SwapRow[]>(
         "tiflisi_swap_requests",
-        `select=${swapFields}&requester_id=eq.${ctx.user.id}&status=in.(pending,approved,rejected)&order=created_at.desc&limit=8`
+        `select=${swapFields}&requester_id=eq.${ctx.user.id}&status=in.(pending,approved,rejected)&order=created_at.desc&limit=20`
       ),
       incoming,
       review,
       supabase<AnnouncementRow[]>(
         "tiflisi_announcements",
-        `select=${announcementFields}&published_at=lte.${encodeURIComponent(now)}&or=(expires_at.is.null,expires_at.gte.${encodeURIComponent(now)})&order=is_pinned.desc,published_at.desc&limit=5`
+        `select=${announcementFields}&published_at=lte.${encodeURIComponent(now)}&or=(expires_at.is.null,expires_at.gte.${encodeURIComponent(now)})&order=is_pinned.desc,published_at.desc&limit=20`
       ),
     ]);
     return {

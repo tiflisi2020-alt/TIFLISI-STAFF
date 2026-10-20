@@ -16,6 +16,15 @@ import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useStaff } from "@/contexts/StaffContext";
 import { Avatar, GeorgianDate } from "./Shared";
+import {
+  markNoticesSeen,
+  readNoticeMemory,
+  rememberResolved,
+  visibleAnnouncements,
+  visibleAnswers,
+  writeNoticeMemory,
+  type NoticeMemory,
+} from "@shared/noticeState";
 import { prettyTime, restaurantDate } from "@shared/schedule";
 import { getLoginHref } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -84,19 +93,51 @@ export default function Layout({ children }: { children: ReactNode }) {
   });
   const deciding = reviewRequest.isPending;
   const isManager = auth.user?.role === "admin";
-  const weekAgo = Date.now() - 7 * 86400000;
-  const review = isManager ? (notices.data?.review ?? []) : [];
-  const reviewIds = new Set(review.map(item => item.id));
-  const outgoing = (notices.data?.outgoing ?? []).filter(
-    item =>
-      !reviewIds.has(item.id) &&
-      (item.status === "pending" ||
-        new Date(item.created_at).getTime() >= weekAgo)
+  const userId = auth.user?.id ?? null;
+  const [memory, setMemory] = useState<NoticeMemory>(() => readNoticeMemory(userId));
+  useEffect(() => {
+    setMemory(readNoticeMemory(userId));
+  }, [userId]);
+  const review = (isManager ? (notices.data?.review ?? []) : []).filter(
+    item => item.requester_id !== userId
   );
-  const incoming = isManager ? [] : (notices.data?.incoming ?? []);
-  const announcements = notices.data?.announcements ?? [];
+  const reviewIds = new Set(review.map(item => item.id));
+  const incoming = (isManager ? [] : (notices.data?.incoming ?? [])).filter(
+    item => item.requester_id !== userId
+  );
+  const answers = visibleAnswers(
+    (notices.data?.outgoing ?? []).filter(item => !reviewIds.has(item.id)),
+    memory,
+    Date.now()
+  );
+  const posted = visibleAnnouncements(
+    notices.data?.announcements ?? [],
+    userId ?? 0,
+    Date.now()
+  );
+  const unseenAnswers = answers.filter(item => !memory.requests.includes(item.id));
+  const unseenPosts = posted.filter(item => !memory.announcements.includes(item.id));
   const noticeCount =
-    incoming.length + review.length + outgoing.length + announcements.length;
+    incoming.length + review.length + unseenAnswers.length + unseenPosts.length;
+  const noticeListCount = incoming.length + review.length + answers.length + posted.length;
+  useEffect(() => {
+    if (!userId) return;
+    const next = rememberResolved(memory, notices.data?.outgoing ?? [], Date.now());
+    if (!next) return;
+    writeNoticeMemory(userId, next);
+    setMemory(next);
+  }, [memory, notices.data?.outgoing, userId]);
+  useEffect(() => {
+    if (!notifications || !userId) return;
+    const next = markNoticesSeen(
+      memory,
+      posted.map(item => item.id),
+      answers.map(item => item.id)
+    );
+    if (!next) return;
+    writeNoticeMemory(userId, next);
+    setMemory(next);
+  }, [answers, memory, notifications, posted, userId]);
   const pageLabel =
     location === "/admin"
       ? "ადმინისტრაცია"
@@ -272,7 +313,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
           {!auth.user ? (
             <p>შეტყობინების სანახავად შედი ანგარიშში.</p>
-          ) : noticeCount === 0 ? (
+          ) : noticeListCount === 0 ? (
             <p>ახალი შეტყობინება არ არის.</p>
           ) : (
             <div className="notice-list">
@@ -326,7 +367,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   <small>გახსენი პროფილი დასადასტურებლად</small>
                 </Link>
               ))}
-              {announcements.map(item => (
+              {posted.map(item => (
                 <Link
                   key={`announcement-${item.id}`}
                   href="/"
@@ -356,7 +397,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   </small>
                 </Link>
               ))}
-              {outgoing.map(item => (
+              {answers.map(item => (
                 <Link
                   key={`out-${item.id}`}
                   href="/profile"
@@ -366,9 +407,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                   <b>
                     {item.status === "approved"
                       ? `${item.target_name} დამტკიცდა შენს ნაცვლად`
-                      : item.status === "rejected"
-                        ? "ჩანაცვლება უარყოფილია"
-                        : `${item.target_name} ელოდება დამტკიცებას`}
+                      : "ჩანაცვლება უარყოფილია"}
                   </b>
                   <span>
                     მოთხოვნა · <GeorgianDate date={item.own_date} short /> ·{" "}
