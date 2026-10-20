@@ -94,7 +94,9 @@ export default function Layout({ children }: { children: ReactNode }) {
         new Date(item.created_at).getTime() >= weekAgo)
   );
   const incoming = isManager ? [] : (notices.data?.incoming ?? []);
-  const noticeCount = incoming.length + review.length + outgoing.length;
+  const announcements = notices.data?.announcements ?? [];
+  const noticeCount =
+    incoming.length + review.length + outgoing.length + announcements.length;
   const pageLabel =
     location === "/admin"
       ? "ადმინისტრაცია"
@@ -280,7 +282,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                     {item.requester_name} → {item.target_name}
                   </b>
                   <span>
-                    დადასტურება გელოდება ·{" "}
+                    მოთხოვნა · დადასტურება გელოდება ·{" "}
                     <GeorgianDate date={item.own_date} short /> ·{" "}
                     {prettyTime(item.own_time)}
                   </span>
@@ -317,11 +319,41 @@ export default function Layout({ children }: { children: ReactNode }) {
                 >
                   <b>{item.requester_name} გთხოვს ჩანაცვლებას</b>
                   <span>
-                    მის ნაცვლად გამოსვლა ·{" "}
+                    მოთხოვნა · მის ნაცვლად გამოსვლა ·{" "}
                     <GeorgianDate date={item.own_date} short /> ·{" "}
                     {prettyTime(item.own_time)}
                   </span>
                   <small>გახსენი პროფილი დასადასტურებლად</small>
+                </Link>
+              ))}
+              {announcements.map(item => (
+                <Link
+                  key={`announcement-${item.id}`}
+                  href="/"
+                  className="notice-item"
+                  onClick={() => setNotifications(false)}
+                >
+                  <b>{item.title}</b>
+                  <span>
+                    {item.isPinned
+                      ? "მნიშვნელოვანი განცხადება"
+                      : item.kind === "urgent"
+                        ? "სასწრაფო განცხადება"
+                        : item.kind === "schedule"
+                          ? "განრიგის განცხადება"
+                          : item.kind === "event"
+                            ? "ღონისძიება"
+                            : "განცხადება"}
+                    {" · "}
+                    {new Date(item.publishedAt).toLocaleDateString("ka-GE", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </span>
+                  <small>
+                    {item.body.replace(/\s+/g, " ").trim().slice(0, 90)}
+                    {item.body.trim().length > 90 ? "…" : ""}
+                  </small>
                 </Link>
               ))}
               {outgoing.map(item => (
@@ -339,7 +371,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                         : `${item.target_name} ელოდება დამტკიცებას`}
                   </b>
                   <span>
-                    <GeorgianDate date={item.own_date} short /> ·{" "}
+                    მოთხოვნა · <GeorgianDate date={item.own_date} short /> ·{" "}
                     {prettyTime(item.own_time)}
                   </span>
                 </Link>

@@ -202,6 +202,8 @@ export default function Admin() {
       setAnnouncementPinned(false);
       setAnnouncementExpiry("");
       await announcements.refetch();
+      await utils.staff.notices.invalidate();
+      await utils.staff.announcements.invalidate();
     },
     onError: e => toast.error(e.message),
   });
@@ -209,6 +211,8 @@ export default function Admin() {
     onSuccess: async () => {
       toast.success("განცხადება დაარქივდა.");
       await announcements.refetch();
+      await utils.staff.notices.invalidate();
+      await utils.staff.announcements.invalidate();
     },
     onError: e => toast.error(e.message),
   });

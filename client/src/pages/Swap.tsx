@@ -65,6 +65,7 @@ export default function Swap() {
     onSuccess: () => {
       setSent(true);
       utils.staff.requests.invalidate();
+      utils.staff.notices.invalidate();
       toast.success("მოთხოვნა წარმატებით გაიგზავნა.");
     },
     onError: error => toast.error(error.message),

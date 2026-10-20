@@ -709,15 +709,25 @@ export const staffRouter = router({
             `select=${swapFields}&status=eq.pending&order=created_at.desc&limit=8`
           )
         : Promise.resolve([] as SwapRow[]);
-    const [outgoing, asked, pending] = await Promise.all([
+    const now = new Date().toISOString();
+    const [outgoing, asked, pending, announcementRows] = await Promise.all([
       supabase<SwapRow[]>(
         "tiflisi_swap_requests",
         `select=${swapFields}&requester_id=eq.${ctx.user.id}&status=in.(pending,approved,rejected)&order=created_at.desc&limit=8`
       ),
       incoming,
       review,
+      supabase<AnnouncementRow[]>(
+        "tiflisi_announcements",
+        `select=${announcementFields}&published_at=lte.${encodeURIComponent(now)}&or=(expires_at.is.null,expires_at.gte.${encodeURIComponent(now)})&order=is_pinned.desc,published_at.desc&limit=5`
+      ),
     ]);
-    return { outgoing, incoming: asked, review: pending };
+    return {
+      outgoing,
+      incoming: asked,
+      review: pending,
+      announcements: announcementRows.map(asAnnouncement),
+    };
   }),
   createSwap: protectedProcedure
     .input(
