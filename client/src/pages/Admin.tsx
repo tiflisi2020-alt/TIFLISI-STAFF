@@ -55,6 +55,7 @@ export default function Admin() {
   >("schedule");
   const [department, setDepartment] = useState<Department>("waiters");
   const [staffId, setStaffId] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
   const [date, setDate] = useState(restaurantToday());
   const [time, setTime] = useState("OFF");
   const [position, setPosition] = useState("");
@@ -128,6 +129,22 @@ export default function Admin() {
       setTab(requested);
   }, []);
   useEffect(() => {
+    if (!editorOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setEditorOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [editorOpen]);
+  useEffect(() => {
+    setEditorOpen(false);
+  }, [department, tab]);
+  useEffect(() => {
     setTime(current?.time ?? "OFF");
     setPosition(current?.position ?? "");
     setNotes(current?.notes ?? "");
@@ -141,6 +158,7 @@ export default function Admin() {
   ]);
   const save = trpc.admin.updateShift.useMutation({
     onSuccess: async () => {
+      setEditorOpen(false);
       toast.success("ცვლა Supabase-ში შეინახა.");
       await Promise.all([
         utils.staff.shifts.invalidate(),
@@ -467,7 +485,10 @@ export default function Admin() {
                       type="button"
                       className={`admin-phone-person${working ? " working" : ""}${selected ? " selected" : ""}`}
                       aria-pressed={selected}
-                      onClick={() => setStaffId(member.id)}
+                      onClick={() => {
+                        setStaffId(member.id);
+                        setEditorOpen(true);
+                      }}
                     >
                       <b>{member.name}</b>
                       <span>
@@ -537,7 +558,32 @@ export default function Admin() {
             </div>
             </>
           )}
-          {roster.length > 0 && <form onSubmit={submit} className="admin-edit-form">
+          {roster.length > 0 && (
+          <div className={`admin-editor${editorOpen ? " open" : ""}`}>
+            <button
+              type="button"
+              className="admin-editor-backdrop"
+              aria-label="დახურვა"
+              onClick={() => setEditorOpen(false)}
+            />
+            <form
+              onSubmit={submit}
+              className="admin-edit-form"
+              role={editorOpen ? "dialog" : undefined}
+              aria-modal={editorOpen ? true : undefined}
+              aria-label="ცვლის რედაქტირება"
+            >
+            <div className="admin-sheet-bar">
+              <span className="admin-sheet-grip" aria-hidden="true" />
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="დახურვა"
+                onClick={() => setEditorOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
             <div className="section-title">
               <h2>
                 {person
@@ -627,7 +673,9 @@ export default function Admin() {
                 ცვლა ვერ ჩაიტვირთა. შენახვა უსაფრთხოებისთვის გამორთულია.
               </p>
             )}
-          </form>}
+          </form>
+          </div>
+          )}
           <div className="info-strip">
             <CalendarDays size={16} />
             <p>
