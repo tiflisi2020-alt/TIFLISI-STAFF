@@ -26,6 +26,7 @@ const nav = [
   { path: "/team", label: "გუნდი", icon: Users },
   { path: "/profile", label: "პროფილი", icon: UserRound },
 ];
+const adminNav = { path: "/admin", label: "მართვა", icon: ShieldCheck };
 export function Brand() {
   return (
     <Link href="/" className="brand">
@@ -236,6 +237,16 @@ export default function Layout({ children }: { children: ReactNode }) {
             <span>{item.label}</span>
           </Link>
         ))}
+        {auth.user?.role === "admin" && (
+          <Link
+            href={adminNav.path}
+            className={location === adminNav.path ? "active" : ""}
+            aria-label="ადმინისტრაცია"
+          >
+            <adminNav.icon size={21} />
+            <span>{adminNav.label}</span>
+          </Link>
+        )}
       </nav>
       {notifications && (
         <div className="popover notification-popover">

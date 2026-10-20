@@ -44,6 +44,8 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-size: 14px;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
 }
 button,
@@ -2440,6 +2442,11 @@ select:focus {
     padding: 28px 22px 96px;
     max-width: 640px;
   }
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
   .page-heading {
     margin-bottom: 24px;
     align-items: flex-start;
@@ -2646,11 +2653,14 @@ select:focus {
     bottom: 0;
     left: 0;
     right: 0;
+    width: 100%;
+    min-height: 64px;
     background: #FBF6F1;
     border-top: 1px solid #E4D4C8;
     z-index: 50;
-    padding: 9px 13px calc(9px + env(safe-area-inset-bottom));
+    padding: 9px 10px max(9px, env(safe-area-inset-bottom));
     box-shadow: 0 -6px 20px #2C161408;
+    isolation: isolate;
   }
   .bottom-nav a {
     flex: 1;
@@ -2662,6 +2672,7 @@ select:focus {
     color: #6E5248;
     font-size: 9px;
     min-height: 42px;
+    min-width: 0;
   }
   .bottom-nav a.active {
     color: #fff;
