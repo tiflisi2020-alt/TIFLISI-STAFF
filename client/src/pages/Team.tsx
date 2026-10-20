@@ -10,6 +10,7 @@ import {
 } from "@shared/schedule";
 import { useStaff } from "@/contexts/StaffContext";
 import { Avatar, EmptyState, PageHeading } from "@/components/staff/Shared";
+import { TeamSkeleton } from "@/components/staff/Skeletons";
 
 export default function Team() {
   const { staff, selectStaff, upcoming, today, roster } = useStaff();
@@ -73,11 +74,7 @@ export default function Team() {
           <button onClick={() => roster.refetch()}>ხელახლა ცდა</button>
         </div>
       ) : roster.isLoading ? (
-        <div className="loading-grid">
-          <div className="loading-card" />
-          <div className="loading-card" />
-          <div className="loading-card" />
-        </div>
+        <TeamSkeleton />
       ) : visible.length ? (
         <div className="team-grid">
           {visible.map(person => {
@@ -109,17 +106,19 @@ export default function Team() {
                 <p>{person.role}</p>
                 <div className="person-next">
                   <span>
-                    {upcoming.isLoading
-                      ? "ცვლები იტვირთება…"
-                      : upcoming.isError
-                        ? "ცვლა ვერ ჩაიტვირთა"
-                        : shift
-                      ? working
-                        ? "დღევანდელი ცვლა"
-                        : "უახლოესი ცვლა"
-                      : "ცვლა ჯერ არ არის"}
+                    {upcoming.isError
+                      ? "ცვლა ვერ ჩაიტვირთა"
+                      : upcoming.isLoading || shift
+                        ? working
+                          ? "დღევანდელი ცვლა"
+                          : "უახლოესი ცვლა"
+                        : "ცვლა ჯერ არ არის"}
                   </span>
-                  <b>{shift ? prettyTime(shift.time) : "—"}</b>
+                  {upcoming.isLoading ? (
+                    <span className="pin pin-inline" />
+                  ) : (
+                    <b>{shift ? prettyTime(shift.time) : "—"}</b>
+                  )}
                 </div>
                 <Link
                   href="/schedule"

@@ -30,6 +30,7 @@ import {
   GeorgianDate,
   PageHeading,
 } from "@/components/staff/Shared";
+import { RowSkeleton } from "@/components/staff/Skeletons";
 
 const statuses: Record<string, string> = {
   pending: "განხილვის მოლოდინში",
@@ -256,11 +257,7 @@ export default function Profile() {
           </div>
         </div>
       )}
-      {auth.user && profile.isLoading && (
-        <div className="loading-card" role="status" aria-live="polite">
-          პროფილის მონაცემები იტვირთება…
-        </div>
-      )}
+      {auth.user && profile.isLoading && <RowSkeleton count={2} />}
       {auth.user && profile.isError && (
         <div className="error-banner" role="alert">
           პროფილის მონაცემები ვერ ჩაიტვირთა. {" "}
@@ -524,7 +521,7 @@ export default function Profile() {
             <span className="tag">შენ გთხოვენ</span>
           </div>
           {incoming.isLoading ? (
-            <div className="loading-card" />
+            <RowSkeleton count={2} />
           ) : incoming.isError ? (
             <div className="error-banner">
               მოთხოვნები ვერ ჩაიტვირთა.{" "}
@@ -583,7 +580,7 @@ export default function Profile() {
           </Link>
         </div>
         {requests.isLoading && auth.user ? (
-          <div className="loading-card" />
+          <RowSkeleton count={2} />
         ) : requests.isError ? (
           <div className="error-banner">
             მოთხოვნები ვერ ჩაიტვირთა.{" "}

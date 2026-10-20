@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { PageHeading } from "@/components/staff/Shared";
+import { Brand } from "@/components/staff/Layout";
 
 type Mode = "login" | "signup" | "recover" | "reset";
 async function authPost(action: string, body: unknown) {
@@ -171,7 +172,8 @@ export default function Login() {
           ? "მიუთითე ახალი პაროლი მოქმედი აღდგენის ბმულით."
           : "უსაფრთხოდ შედი ტიფლისის გუნდის სივრცეში.";
   return (
-    <>
+    <main className="auth-screen">
+      <Brand />
       <PageHeading
         eyebrow="შენი სამუშაო სივრცე"
         title={title}
@@ -354,6 +356,6 @@ export default function Login() {
           განრიგის ნახვა შესვლის გარეშე
         </Link>
       </section>
-    </>
+    </main>
   );
 }

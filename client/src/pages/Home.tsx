@@ -22,6 +22,13 @@ import {
   GeorgianDate,
   PageHeading,
 } from "@/components/staff/Shared";
+import {
+  CardSkeleton,
+  HeroSkeleton,
+  RowSkeleton,
+  StatSkeleton,
+  WeekSkeleton,
+} from "@/components/staff/Skeletons";
 
 function shiftSortKey(shift: { date: string; time: string }) {
   const start = shift.time.match(/\d{1,2}:\d{2}/)?.[0] ?? "23:59";
@@ -116,6 +123,10 @@ export default function Home() {
       ) : null}
       <div className="dashboard-top">
         <section className="hero-shift">
+          {upcoming.isLoading ? (
+            <HeroSkeleton />
+          ) : (
+            <>
           <div className="hero-top">
             <span>
               <span className="hero-dot" />
@@ -126,13 +137,7 @@ export default function Home() {
                   : "შენი უახლოესი ცვლა"}
             </span>
             <span className="hero-badge">
-              {next ? (
-                <GeorgianDate date={next.date} />
-              ) : upcoming.isLoading ? (
-                "იტვირთება"
-              ) : (
-                "განრიგი"
-              )}
+              {next ? <GeorgianDate date={next.date} /> : "განრიგი"}
             </span>
           </div>
           {next ? (
@@ -162,19 +167,15 @@ export default function Home() {
             </>
           ) : (
             <>
-              <h2 className="hero-empty-title">
-                {upcoming.isLoading
-                  ? "ცვლები იტვირთება…"
-                  : "ცვლა ჯერ არ არის დაგეგმილი"}
-              </h2>
+              <h2 className="hero-empty-title">ცვლა ჯერ არ არის დაგეგმილი</h2>
               <p className="hero-empty-description">
-                {upcoming.isLoading
-                  ? "მონაცემებს Supabase-დან ვიღებთ."
-                  : "შენი ახალი ცვლა აქ გამოჩნდება."}
+                შენი ახალი ცვლა აქ გამოჩნდება.
               </p>
               <Link href="/schedule" className="hero-empty-link">
                 განრიგის ნახვა <ArrowRight size={17} />
               </Link>
+            </>
+          )}
             </>
           )}
           <div className="hero-decoration" aria-hidden="true">
@@ -186,35 +187,33 @@ export default function Home() {
             <h2>{viewingOther ? "კვირის სტატისტიკა" : "შენი კვირა"}</h2>
             <span>{currentWeekLabel}</span>
           </div>
+          {weekQuery.isLoading ? (
+            <StatSkeleton />
+          ) : (
           <div className="stats-row">
             <div className="stat-card">
               <span className="stat-icon">
                 <CalendarDays size={19} />
               </span>
-              <strong>
-                {weekQuery.isLoading || weekQuery.isError ? "—" : weekShifts.length}
-              </strong>
+              <strong>{weekQuery.isError ? "—" : weekShifts.length}</strong>
               <span>დაგეგმილი ცვლა</span>
             </div>
             <div className="stat-card">
               <span className="stat-icon">
                 <Clock3 size={19} />
               </span>
-              <strong>
-                {weekQuery.isLoading || weekQuery.isError ? "—" : activeDays}
-              </strong>
+              <strong>{weekQuery.isError ? "—" : activeDays}</strong>
               <span>სამუშაო დღე</span>
             </div>
             <div className="stat-card">
               <span className="stat-icon">
                 <Coffee size={19} />
               </span>
-              <strong>
-                {weekQuery.isLoading || weekQuery.isError ? "—" : 7 - activeDays}
-              </strong>
+              <strong>{weekQuery.isError ? "—" : 7 - activeDays}</strong>
               <span>ცვლის გარეშე</span>
             </div>
           </div>
+          )}
           <div className="stat-footnote">
             <Info size={13} /> სტატისტიკა დაგეგმილი ცვლების მიხედვით
           </div>
@@ -256,7 +255,7 @@ export default function Home() {
                   {!auth.user
                     ? "შედი ანგარიშში სტატუსების სანახავად"
                     : requests.isLoading
-                      ? "იტვირთება…"
+                      ? <span className="pin pin-inline" />
                       : requests.isError
                         ? "სტატუსი ვერ ჩაიტვირთა"
                         : requests.data?.length
@@ -279,7 +278,7 @@ export default function Home() {
             <span>{announcements.data?.length ?? 0} ბოლო ჩანაწერი</span>
           </div>
           {announcements.isLoading ? (
-            <div className="loading-card" />
+            <CardSkeleton count={2} className="announcement-list" />
           ) : announcements.isError ? (
             <div className="error-banner">განცხადებები ვერ ჩაიტვირთა.</div>
           ) : announcements.data?.length ? (
@@ -317,6 +316,9 @@ export default function Home() {
             სრული განრიგი <ArrowRight size={16} />
           </Link>
         </div>
+        {weekQuery.isLoading ? (
+          <WeekSkeleton />
+        ) : (
         <div className="overview-days">
           {days.map(d => {
             const key = dateKey(d);
@@ -348,6 +350,7 @@ export default function Home() {
             );
           })}
         </div>
+        )}
       </section>
       <div className="dashboard-bottom">
         <section className="next-panel">
@@ -359,6 +362,8 @@ export default function Home() {
               title="განრიგი ვერ ჩაიტვირთა"
               description="ხელახლა ცადე მონაცემების ჩატვირთვა ზემოთ მოცემული ღილაკით."
             />
+          ) : upcoming.isLoading ? (
+            <RowSkeleton />
           ) : mine.length ? (
             mine.slice(0, 3).map(shift => (
               <Link

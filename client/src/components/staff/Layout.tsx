@@ -12,7 +12,7 @@ import {
   X,
   ShieldCheck,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useStaff } from "@/contexts/StaffContext";
 import { Avatar, GeorgianDate } from "./Shared";
@@ -48,6 +48,14 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { staff, selected, selectStaff, auth, roster } = useStaff();
   const [notifications, setNotifications] = useState(false);
   const [selector, setSelector] = useState(false);
+  useEffect(() => {
+    if (!notifications && !selector) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [notifications, selector]);
   const utils = trpc.useUtils();
   const notices = trpc.staff.notices.useQuery(undefined, {
     enabled: !!auth.user,

@@ -33,6 +33,7 @@ import {
   GeorgianDate,
   PageHeading,
 } from "@/components/staff/Shared";
+import { AdminSkeleton, RowSkeleton } from "@/components/staff/Skeletons";
 import { getLoginHref } from "@/const";
 import { EmployeeManager } from "@/components/staff/EmployeeManager";
 
@@ -193,7 +194,7 @@ export default function Admin() {
     },
     onError: e => toast.error(e.message),
   });
-  if (auth.loading) return <div className="loading-card" />;
+  if (auth.loading) return <AdminSkeleton />;
   if (!auth.user)
     return (
       <section className="success-panel">
@@ -411,7 +412,7 @@ export default function Admin() {
             </div>
           </div>
           {shifts.isLoading ? (
-            <div className="loading-card" />
+            <RowSkeleton count={6} />
           ) : shifts.isError ? (
             <div className="error-banner">
               განრიგი ვერ ჩაიტვირთა.{" "}
@@ -602,7 +603,7 @@ export default function Admin() {
             <div className="admin-save-row">
               <span className="muted">
                 {shifts.isLoading
-                  ? "ცვლა იტვირთება…"
+                  ? <span className="pin pin-inline" />
                   : current
                     ? "არსებული ჩანაწერი რედაქტირდება"
                     : "ამ დღეს ჩანაწერი ჯერ არ არის; შეიქმნება ახალი ცვლა."}
@@ -667,7 +668,7 @@ export default function Admin() {
             </div>
           </div>
           {requests.isLoading ? (
-            <div className="loading-card" />
+            <RowSkeleton count={3} />
           ) : requests.isError ? (
             <div className="error-banner">
               მოთხოვნები ვერ ჩაიტვირთა.{" "}
@@ -833,7 +834,7 @@ export default function Admin() {
               </button>
             </div>
             {announcements.isLoading ? (
-              <div className="loading-card" />
+              <RowSkeleton count={3} />
             ) : announcements.isError ? (
               <div className="error-banner">განცხადებების სია ვერ ჩაიტვირთა.</div>
             ) : announcements.data?.length ? (

@@ -17,6 +17,7 @@ import {
   type Shift,
 } from "@shared/schedule";
 import { Avatar, GeorgianDate, PageHeading } from "@/components/staff/Shared";
+import { PreviewSkeleton } from "@/components/staff/Skeletons";
 
 export default function Swap() {
   const { auth, selected, myStaff, staff, upcoming, today } = useStaff();
@@ -148,9 +149,7 @@ export default function Swap() {
                 }}
                 required
               >
-                <option value="">
-                  {upcoming.isLoading ? "ცვლები იტვირთება…" : "აირჩიე შენი ცვლა"}
-                </option>
+                <option value="">აირჩიე შენი ცვლა</option>
                 {ownOptions.map(s => (
                   <option value={s.id} key={s.id}>
                     {shiftLabel(s)}
@@ -173,6 +172,8 @@ export default function Swap() {
                   </div>
                   <h3>{prettyTime(own.time)}</h3>
                 </>
+              ) : upcoming.isLoading ? (
+                <PreviewSkeleton />
               ) : (
                 <p className="muted">ჯერ აირჩიე ცვლა</p>
               )}

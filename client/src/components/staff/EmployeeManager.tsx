@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { departmentLabels, type DepartmentId } from "@shared/schedule";
 import { EmptyState } from "@/components/staff/Shared";
+import { RowSkeleton } from "@/components/staff/Skeletons";
 
 type Department = DepartmentId;
 
@@ -124,7 +125,7 @@ export function EmployeeManager() {
         კალენდარზე რჩება. სახელის შეცვლა ამ დეპარტამენტის ცვლებსაც გადაიტანს.
       </p>
       {directory.isLoading ? (
-        <div className="loading-card" />
+        <RowSkeleton count={5} />
       ) : directory.isError ? (
         <div className="error-banner">
           სია ვერ ჩაიტვირთა.{" "}

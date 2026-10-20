@@ -14,6 +14,7 @@ import {
 } from "@shared/schedule";
 import { useStaff } from "@/contexts/StaffContext";
 import { EmptyState, PageHeading, ShiftCard } from "@/components/staff/Shared";
+import { ShiftSkeleton } from "@/components/staff/Skeletons";
 
 export default function Schedule() {
   const {
@@ -168,10 +169,7 @@ export default function Schedule() {
         <span>{visible.length} ცვლა</span>
       </div>
       {weekQuery.isLoading ? (
-        <div className="loading-grid">
-          <div className="loading-card" />
-          <div className="loading-card" />
-        </div>
+        <ShiftSkeleton />
       ) : weekQuery.isError ? (
         <div className="error-banner">
           განრიგი ვერ ჩაიტვირთა.{" "}
