@@ -32,6 +32,7 @@
   --primary: #8B3A2A;
   --muted: #5C4034;
   --border: #E0D0C4;
+  --bottom-nav-height: 70px;
   font-family: "Manrope", "Noto Sans Georgian", sans-serif;
   font-synthesis: none;
   color-scheme: light;
@@ -2439,7 +2440,8 @@ select:focus {
     min-width: 29px;
   }
   .main-content {
-    padding: 28px 22px 96px;
+    padding: 28px 22px
+      calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
     max-width: 640px;
   }
   input,
@@ -2650,17 +2652,17 @@ select:focus {
   .bottom-nav {
     display: flex;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: auto 0 0;
     width: 100%;
-    min-height: 64px;
+    height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
     background: #FBF6F1;
     border-top: 1px solid #E4D4C8;
-    z-index: 50;
-    padding: 9px 10px max(9px, env(safe-area-inset-bottom));
+    z-index: 9999;
+    padding: 9px 10px env(safe-area-inset-bottom, 0px);
     box-shadow: 0 -6px 20px #2C161408;
     isolation: isolate;
+    transform: none;
   }
   .bottom-nav a {
     flex: 1;
