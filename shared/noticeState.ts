@@ -76,7 +76,6 @@ export function visibleAnnouncements<T extends NoticeAnnouncement>(
   now: number
 ) {
   return items.filter(item => {
-    if (item.createdBy != null && Number(item.createdBy) === userId) return false;
     if (item.isPinned || item.kind === "urgent") return true;
     return now - new Date(item.publishedAt).getTime() <= NOTICE_VISIBLE_MS;
   });

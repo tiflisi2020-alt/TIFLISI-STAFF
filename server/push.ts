@@ -336,7 +336,7 @@ export async function notifyAnnouncement(input: {
       return;
     const rows = await supabase<SubscriptionRow[]>(
       "tiflisi_push_subscriptions",
-      `select=id,account_id,endpoint,p256dh,auth&account_id=neq.${input.createdBy}&limit=200`
+      "select=id,account_id,endpoint,p256dh,auth&limit=200"
     );
     await deliver(rows, {
       title: input.title,

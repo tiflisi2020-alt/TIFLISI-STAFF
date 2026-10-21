@@ -16,7 +16,7 @@ const memory = (): NoticeMemory => ({
 const now = Date.parse("2026-10-20T12:00:00Z");
 
 describe("notice bell rules", () => {
-  it("keeps pinned and urgent announcements and hides the author's own post", () => {
+  it("keeps pinned, urgent, and the author's own recent post", () => {
     const items = visibleAnnouncements(
       [
         {
@@ -58,7 +58,7 @@ describe("notice bell rules", () => {
       4,
       now
     );
-    expect(items.map(item => item.id)).toEqual(["pinned", "urgent", "fresh"]);
+    expect(items.map(item => item.id)).toEqual(["own", "pinned", "urgent", "fresh"]);
   });
 
   it("shows an answer for three days after it is first noticed", () => {
