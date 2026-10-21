@@ -17,6 +17,14 @@ import {
   type Department,
 } from "./supabase";
 import {
+  notifySwapAnswered,
+  notifySwapCancelled,
+  notifySwapRequested,
+  pushPublicConfig,
+  removePushSubscription,
+  savePushSubscription,
+} from "./push";
+import {
   departmentIds,
   isWorking,
   restaurantToday,
@@ -866,6 +874,19 @@ export const staffRouter = router({
           reason: input.reason,
         },
       });
+      if (!rows[0])
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "მოთხოვნა ვერ შეინახა.",
+        });
+      await notifySwapRequested({
+        requesterId: ctx.user.id,
+        department: input.department,
+        requesterName: input.own.name,
+        targetName: input.target.name,
+        ownDate: input.own.date,
+        ownTime: input.own.time,
+      });
       return rows[0];
     }),
   respondSwap: protectedProcedure
@@ -908,6 +929,13 @@ export const staffRouter = router({
             code: "CONFLICT",
             message: "მოთხოვნა უკვე განხილულია ან ვერ მოიძებნა.",
           });
+        await notifySwapAnswered({
+          requesterId: request.requester_id,
+          status: "rejected",
+          targetName: request.target_name,
+          ownDate: request.own_date,
+          ownTime: request.own_time,
+        });
         return { success: true };
       }
       const undo = await exchangeShifts(request);
@@ -931,6 +959,13 @@ export const staffRouter = router({
           message: "მოთხოვნა პარალელურად განიხილეს. განრიგი უკან დაბრუნდა.",
         });
       }
+      await notifySwapAnswered({
+        requesterId: request.requester_id,
+        status: "approved",
+        targetName: request.target_name,
+        ownDate: request.own_date,
+        ownTime: request.own_time,
+      });
       return { success: true };
     }),
   cancelSwap: protectedProcedure
@@ -946,6 +981,50 @@ export const staffRouter = router({
           code: "CONFLICT",
           message: "მოთხოვნა უკვე განხილულია ან ვერ მოიძებნა.",
         });
+      await notifySwapCancelled({
+        requesterId: ctx.user.id,
+        department: rows[0].department,
+        requesterName: rows[0].requester_name,
+        targetName: rows[0].target_name,
+        ownDate: rows[0].own_date,
+        ownTime: rows[0].own_time,
+      });
+      return { success: true };
+    }),
+  pushConfig: protectedProcedure.query(() => pushPublicConfig()),
+  savePushSubscription: protectedProcedure
+    .input(
+      z.object({
+        endpoint: z.string().trim().url().max(2000),
+        p256dh: z.string().trim().min(8).max(200),
+        auth: z.string().trim().min(8).max(200),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        await savePushSubscription(ctx.user.id, input);
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            error instanceof Error
+              ? error.message
+              : "შეტყობინების შენახვა ვერ შესრულდა.",
+        });
+      }
+      return { success: true };
+    }),
+  removePushSubscription: protectedProcedure
+    .input(z.object({ endpoint: z.string().trim().url().max(2000) }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        await removePushSubscription(ctx.user.id, input.endpoint);
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "გამორთვა ვერ შესრულდა.",
+        });
+      }
       return { success: true };
     }),
 });

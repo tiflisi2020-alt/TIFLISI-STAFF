@@ -1108,6 +1108,35 @@ select:focus {
   line-height: 1.9;
   margin: 10px 0 0;
 }
+.phone-push {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+}
+.notification-popover .phone-push p {
+  margin: 0;
+  line-height: 1.6;
+}
+.phone-push button {
+  width: 100%;
+  margin-top: 8px;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #8B3A2A;
+  color: #FBF6F1;
+  font-size: 12px;
+  font-weight: 600;
+}
+.phone-push button.quiet {
+  background: transparent;
+  color: #6B2E24;
+  border: 1px solid #C4785A;
+}
+.phone-push button:disabled {
+  opacity: 0.6;
+}
 .notice-list {
   display: flex;
   flex-direction: column;

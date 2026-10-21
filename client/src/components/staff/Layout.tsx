@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import PhoneNotifications from "./PhoneNotifications";
 import {
   ArrowUpRight,
   Bell,
@@ -53,10 +54,22 @@ export function Brand() {
 }
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const { staff, selected, selectStaff, auth, roster } = useStaff();
   const [notifications, setNotifications] = useState(false);
   const [selector, setSelector] = useState(false);
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      const url = event.data?.url;
+      if (event.data?.type !== "tiflisi-open" || typeof url !== "string") return;
+      if (!url.startsWith("/") || url.startsWith("//")) return;
+      navigate(url);
+      setNotifications(false);
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [navigate]);
   useEffect(() => {
     if (!notifications && !selector) return;
     const previous = document.body.style.overflow;
@@ -311,6 +324,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               <X size={17} />
             </button>
           </div>
+          {auth.user ? <PhoneNotifications userId={auth.user.id} /> : null}
           {!auth.user ? (
             <p>შეტყობინების სანახავად შედი ანგარიშში.</p>
           ) : noticeListCount === 0 ? (

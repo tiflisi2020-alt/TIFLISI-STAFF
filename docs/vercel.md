@@ -20,6 +20,7 @@
 - `SUPABASE_SERVICE_ROLE_KEY` — მხოლოდ დაცულ server ველში. არ გამოიყენო `VITE_`/`NEXT_PUBLIC_` პრეფიქსი. არ ჩადო გასაღები GitHub-ში.
 - `MANUS_PROJECT_ID` — არსებული აპლიკაციის session audience; სახელის მიუხედავად აღარ არის ინტერაქტიული OAuth შესვლა.
 - `MANUS_JWT_SECRET` — ცალკე შემთხვევითი signing secret ამ ჰოსტინგისთვის; existing უსაფრთხო მნიშვნელობა შენარჩუნებულია. არ გამოიყენო Preview-ის სხვა signing secret.
+- `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` — ტელეფონის შეტყობინების ერთი წყვილი. პირადი გასაღები მხოლოდ სერვერზე რჩება.
 
 `MANUS_OAUTH_PORTAL_URL` და `MANUS_OAUTH_API_URL` აღარ მონაწილეობენ თანამშრომლის ინტერაქტიულ შესვლაში. ძველი მნიშვნელობების ყოფნა Manus-ზე გადამისამართებას არ ააქტიურებს.
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { adminProcedure, router } from "./_core/trpc";
 import { departmentIds } from "../shared/schedule";
 import { departments, supabase, type Department } from "./supabase";
+import { notifyAnnouncement, notifySwapAnswered } from "./push";
 import { exchangeShifts, getStaff, type SwapRow } from "./staffRouter";
 
 const department = z.enum(departmentIds);
@@ -94,6 +95,12 @@ export const adminRouter = router({
           code: "INTERNAL_SERVER_ERROR",
           message: "განცხადების გამოქვეყნება ვერ შესრულდა.",
         });
+      await notifyAnnouncement({
+        title: input.title,
+        body: input.body,
+        createdBy: actorId,
+        urgent: input.kind === "urgent",
+      });
       return { success: true };
     }),
   archiveAnnouncement: adminProcedure
@@ -145,6 +152,13 @@ export const adminRouter = router({
             code: "CONFLICT",
             message: "მოთხოვნა უკვე განხილულია ან ვერ მოიძებნა. განაახლეთ სია.",
           });
+        await notifySwapAnswered({
+          requesterId: rows[0].requester_id,
+          status: "rejected",
+          targetName: rows[0].target_name,
+          ownDate: rows[0].own_date,
+          ownTime: rows[0].own_time,
+        });
         return { success: true };
       }
       const pending = await supabase<SwapRow[]>(
@@ -178,6 +192,13 @@ export const adminRouter = router({
           message: "მოთხოვნა პარალელურად განიხილეს. განრიგი უკან დაბრუნდა.",
         });
       }
+      await notifySwapAnswered({
+        requesterId: request.requester_id,
+        status: "approved",
+        targetName: request.target_name,
+        ownDate: request.own_date,
+        ownTime: request.own_time,
+      });
       return { success: true };
     }),
   updateShift: adminProcedure

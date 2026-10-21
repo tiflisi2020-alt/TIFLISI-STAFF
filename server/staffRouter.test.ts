@@ -84,7 +84,7 @@ describe("staff authorization and swap validation", () => {
       { id: 1, name: "Staff A" },
       { id: 2, name: "Staff B" },
     ]);
-    for (let i = 0; i < 6; i++) mock.mockResolvedValueOnce([]);
+    for (let i = 0; i < 10; i++) mock.mockResolvedValueOnce([]);
     await expect(
       caller().createSwap({
         ...input,
@@ -105,7 +105,7 @@ describe("staff authorization and swap validation", () => {
       { id: 1, name: "Staff A" },
       { id: 2, name: "Staff B" },
     ]);
-    for (let i = 0; i < 6; i++) mock.mockResolvedValueOnce([]);
+    for (let i = 0; i < 10; i++) mock.mockResolvedValueOnce([]);
     await expect(
       caller().createSwap({
         ...input,
