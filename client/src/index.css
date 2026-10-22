@@ -1464,11 +1464,17 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 9px;
-  color: #6E5248;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #4A2B21;
+  overflow-wrap: anywhere;
 }
 .shift-meta svg {
-  color: #6E5248;
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: #8B3A2A;
 }
 .shift-note {
   font-size: 10px;
