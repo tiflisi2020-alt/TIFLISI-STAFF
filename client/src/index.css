@@ -1463,9 +1463,8 @@ select:focus {
 .shift-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 15px;
-  font-weight: 700;
+  flex-wrap: wrap;
+  gap: 5px 8px;
   line-height: 1.45;
   color: #4A2B21;
   overflow-wrap: anywhere;
@@ -1475,6 +1474,21 @@ select:focus {
   height: 17px;
   flex: none;
   color: #8B3A2A;
+}
+.shift-position {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: #F4E0D2;
+  color: #6F291D;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.shift-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6E5248;
 }
 .shift-note {
   font-size: 10px;

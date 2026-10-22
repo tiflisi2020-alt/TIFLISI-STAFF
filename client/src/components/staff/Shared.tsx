@@ -75,8 +75,10 @@ export function ShiftCard({
       </div>
       <div className="shift-meta">
         <MapPin size={14} />
-        <span>
-          {shift.position ? `პოზიცია ${shift.position}` : "ტიფლისი"} ·{" "}
+        <span className="shift-position">
+          {shift.position ? `პოზიცია ${shift.position}` : "ტიფლისი"}
+        </span>
+        <span className="shift-date">
           <GeorgianDate date={shift.date} short />
         </span>
       </div>
