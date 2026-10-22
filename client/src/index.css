@@ -3392,7 +3392,7 @@ select:focus {
 }
 .admin-cell {
   width: 100%;
-  min-height: 58px;
+  min-height: 68px;
   border-radius: 10px;
   background: #F7EFE8;
   color: #6E5248;
@@ -3400,13 +3400,19 @@ select:focus {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 5px;
 }
 .admin-cell strong {
   font-size: 12px;
 }
 .admin-cell small {
-  font-size: 9px;
+  max-width: 100%;
+  color: #4A2B21;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 .admin-cell.working {
   background: #F4E0D2;
@@ -3850,7 +3856,12 @@ select:focus {
     font-size: 15px;
   }
   .admin-phone-person small {
-    font-size: 11px;
+    color: #4A2B21;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    text-align: right;
   }
   .admin-phone-person.working {
     background: #F4E0D2;
