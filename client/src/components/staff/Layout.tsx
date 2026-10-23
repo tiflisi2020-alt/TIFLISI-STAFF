@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useStaff } from "@/contexts/StaffContext";
 import { Avatar, GeorgianDate } from "./Shared";
 import {
+  NOTICE_MEMORY_EVENT,
   markNoticesSeen,
   readNoticeMemory,
   rememberResolved,
@@ -62,13 +63,15 @@ export default function Layout({ children }: { children: ReactNode }) {
     if (!("serviceWorker" in navigator)) return;
     const onMessage = (event: MessageEvent) => {
       const url = event.data?.url;
-      if (event.data?.type !== "tiflisi-open" || typeof url !== "string") return;
+      if (event.data?.type !== "tiflisi-open" || typeof url !== "string")
+        return;
       if (!url.startsWith("/") || url.startsWith("//")) return;
       navigate(url);
       setNotifications(false);
     };
     navigator.serviceWorker.addEventListener("message", onMessage);
-    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", onMessage);
   }, [navigate]);
   useEffect(() => {
     if (!notifications && !selector) return;
@@ -107,9 +110,18 @@ export default function Layout({ children }: { children: ReactNode }) {
   const deciding = reviewRequest.isPending;
   const isManager = auth.user?.role === "admin";
   const userId = auth.user?.id ?? null;
-  const [memory, setMemory] = useState<NoticeMemory>(() => readNoticeMemory(userId));
+  const [memory, setMemory] = useState<NoticeMemory>(() =>
+    readNoticeMemory(userId)
+  );
   useEffect(() => {
     setMemory(readNoticeMemory(userId));
+  }, [userId]);
+  useEffect(() => {
+    if (!userId) return;
+    const syncNoticeMemory = () => setMemory(readNoticeMemory(userId));
+    window.addEventListener(NOTICE_MEMORY_EVENT, syncNoticeMemory);
+    return () =>
+      window.removeEventListener(NOTICE_MEMORY_EVENT, syncNoticeMemory);
   }, [userId]);
   const review = (isManager ? (notices.data?.review ?? []) : []).filter(
     item => item.requester_id !== userId
@@ -128,14 +140,23 @@ export default function Layout({ children }: { children: ReactNode }) {
     userId ?? 0,
     Date.now()
   );
-  const unseenAnswers = answers.filter(item => !memory.requests.includes(item.id));
-  const unseenPosts = posted.filter(item => !memory.announcements.includes(item.id));
+  const unseenAnswers = answers.filter(
+    item => !memory.requests.includes(item.id)
+  );
+  const unseenPosts = posted.filter(
+    item => !memory.announcements.includes(item.id)
+  );
   const noticeCount =
     incoming.length + review.length + unseenAnswers.length + unseenPosts.length;
-  const noticeListCount = incoming.length + review.length + answers.length + posted.length;
+  const noticeListCount =
+    incoming.length + review.length + answers.length + posted.length;
   useEffect(() => {
     if (!userId) return;
-    const next = rememberResolved(memory, notices.data?.outgoing ?? [], Date.now());
+    const next = rememberResolved(
+      memory,
+      notices.data?.outgoing ?? [],
+      Date.now()
+    );
     if (!next) return;
     writeNoticeMemory(userId, next);
     setMemory(next);
@@ -144,13 +165,13 @@ export default function Layout({ children }: { children: ReactNode }) {
     if (!notifications || !userId) return;
     const next = markNoticesSeen(
       memory,
-      posted.map(item => item.id),
+      [],
       answers.map(item => item.id)
     );
     if (!next) return;
     writeNoticeMemory(userId, next);
     setMemory(next);
-  }, [answers, memory, notifications, posted, userId]);
+  }, [answers, memory, notifications, userId]);
   const pageLabel =
     location === "/admin"
       ? "ადმინისტრაცია"
@@ -272,7 +293,9 @@ export default function Layout({ children }: { children: ReactNode }) {
               aria-label="თანამშრომლის განრიგის არჩევა"
             >
               <Avatar name={selected?.name ?? "ტიფლისი"} size="small" />
-              <span className="viewer-name">{selected?.name ?? "თანამშრომელი"}</span>
+              <span className="viewer-name">
+                {selected?.name ?? "თანამშრომელი"}
+              </span>
               <ChevronDown size={14} />
             </button>
           </div>
@@ -347,7 +370,10 @@ export default function Layout({ children }: { children: ReactNode }) {
                       className="notice-confirm"
                       disabled={deciding}
                       onClick={() =>
-                        reviewRequest.mutate({ id: item.id, status: "approved" })
+                        reviewRequest.mutate({
+                          id: item.id,
+                          status: "approved",
+                        })
                       }
                     >
                       <Check size={14} /> დადასტურება
@@ -357,7 +383,10 @@ export default function Layout({ children }: { children: ReactNode }) {
                       className="notice-decline"
                       disabled={deciding}
                       onClick={() =>
-                        reviewRequest.mutate({ id: item.id, status: "rejected" })
+                        reviewRequest.mutate({
+                          id: item.id,
+                          status: "rejected",
+                        })
                       }
                     >
                       უარყოფა
@@ -386,7 +415,21 @@ export default function Layout({ children }: { children: ReactNode }) {
                   key={`announcement-${item.id}`}
                   href="/"
                   className="notice-item"
-                  onClick={() => setNotifications(false)}
+                  onClick={() => {
+                    if (userId) {
+                      const next = markNoticesSeen(
+                        readNoticeMemory(userId),
+                        [item.id],
+                        []
+                      );
+                      if (next) {
+                        writeNoticeMemory(userId, next);
+                        setMemory(next);
+                        window.dispatchEvent(new Event(NOTICE_MEMORY_EVENT));
+                      }
+                    }
+                    setNotifications(false);
+                  }}
                 >
                   <b>{item.title}</b>
                   <span>

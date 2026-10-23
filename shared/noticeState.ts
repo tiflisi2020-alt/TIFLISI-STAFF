@@ -26,6 +26,8 @@ const emptyMemory = (): NoticeMemory => ({
   resolvedAt: {},
 });
 
+export const NOTICE_MEMORY_EVENT = "tiflisi-notice-memory-updated";
+
 function storageKey(userId: number) {
   return `tiflisi-notices:${userId}`;
 }
@@ -67,7 +69,10 @@ export function writeNoticeMemory(userId: number, memory: NoticeMemory) {
 }
 
 function sameIds(left: string[], right: string[]) {
-  return left.length === right.length && left.every((id, index) => id === right[index]);
+  return (
+    left.length === right.length &&
+    left.every((id, index) => id === right[index])
+  );
 }
 
 export function visibleAnnouncements<T extends NoticeAnnouncement>(
@@ -148,5 +153,9 @@ export function markNoticesSeen(
     sameIds(nextRequests, memory.requests)
   )
     return null;
-  return { ...memory, announcements: nextAnnouncements, requests: nextRequests };
+  return {
+    ...memory,
+    announcements: nextAnnouncements,
+    requests: nextRequests,
+  };
 }
