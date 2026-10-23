@@ -12,15 +12,25 @@ import { useStaff } from "@/contexts/StaffContext";
 import { Avatar, EmptyState, PageHeading } from "@/components/staff/Shared";
 import { TeamSkeleton } from "@/components/staff/Skeletons";
 
+function cleanPhone(phone: string) {
+  return phone
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, "")
+    .replace(/\u00A0/g, " ")
+    .trim();
+}
+
 function dialablePhone(phone: string) {
-  const compact = phone.trim().replace(/[^\d+]/g, "").replace(/(?!^)\+/g, "");
+  const compact = cleanPhone(phone)
+    .replace(/[^\d+]/g, "")
+    .replace(/(?!^)\+/g, "");
   return compact.replace(/\D/g, "").length >= 6 ? compact : "";
 }
 
 export default function Team() {
-  const { staff, selectStaff, upcoming, today, roster } = useStaff();
+  const { auth, staff, selectStaff, upcoming, today, roster } = useStaff();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<DepartmentId | "all">("all");
+  const canSeePhones = Boolean(auth.user);
   const visible = useMemo(
     () =>
       staff.filter(
@@ -98,7 +108,7 @@ export default function Team() {
                 return `${a.date}T${aStart}`.localeCompare(`${b.date}T${bStart}`);
               })[0];
             const working = shift?.date === today;
-            const phone = person.phone?.trim() ?? "";
+            const phone = cleanPhone(person.phone ?? "");
             const dial = dialablePhone(phone);
             return (
               <article className="person-card" key={person.id}>
@@ -128,19 +138,31 @@ export default function Team() {
                   )}
                 </div>
                 <div className="person-contact">
-                  <span className={phone ? "person-number" : "person-number is-empty"}>
-                    {phone || "ნომერი არ არის"}
-                  </span>
-                  {dial ? (
-                    <a
-                      className="person-call"
-                      href={`tel:${dial}`}
-                      aria-label={`${person.name}-ს დარეკვა`}
-                    >
-                      <Phone size={15} />
-                      დარეკვა
-                    </a>
-                  ) : null}
+                  {canSeePhones ? (
+                    <>
+                      <span
+                        className={
+                          phone ? "person-number" : "person-number is-empty"
+                        }
+                      >
+                        {phone || "ნომერი არ არის"}
+                      </span>
+                      {dial ? (
+                        <a
+                          className="person-call"
+                          href={`tel:${dial}`}
+                          aria-label={`${person.name}-ს დარეკვა`}
+                        >
+                          <Phone size={15} />
+                          დარეკვა
+                        </a>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="person-number is-empty">
+                      ნომერი შესვლის შემდეგ
+                    </span>
+                  )}
                 </div>
                 <Link
                   href="/schedule"

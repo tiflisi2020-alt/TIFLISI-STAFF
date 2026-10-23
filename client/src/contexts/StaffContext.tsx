@@ -35,6 +35,8 @@ function storeStaffId(id: string) {
 function useStaffState() {
   const auth = useAuth();
   const roster = trpc.staff.roster.useQuery(undefined, {
+    // Wait for auth so signed-in sessions get phone numbers on the first fetch.
+    enabled: !auth.loading,
     staleTime: 60000,
     retry: 1,
   });
