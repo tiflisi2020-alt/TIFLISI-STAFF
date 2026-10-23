@@ -336,10 +336,13 @@ export default function Profile() {
           type="button"
           role="tab"
           aria-selected={tab === "stats"}
+          aria-label="მუშაობის სტატისტიკა"
           className={tab === "stats" ? "active" : ""}
           onClick={() => setTab("stats")}
         >
-          <ChartNoAxesColumn size={16} /> მუშაობის სტატისტიკა
+          <ChartNoAxesColumn size={16} />
+          <span className="profile-tab-full">მუშაობის სტატისტიკა</span>
+          <span className="profile-tab-short">სტატისტიკა</span>
         </button>
         {auth.user && (
           <button
