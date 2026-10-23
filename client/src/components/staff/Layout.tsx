@@ -233,7 +233,10 @@ export default function Layout({ children }: { children: ReactNode }) {
             <Check size={13} />
           </div>
           <div className="sidebar-person">
-            <Avatar name={selected?.name ?? "ტიფლისი"} />
+            <Avatar
+              name={selected?.name ?? "ტიფლისი"}
+              src={selected?.avatarUrl}
+            />
             <div>
               <strong>{selected?.name ?? "თანამშრომელი"}</strong>
               <span>
@@ -292,7 +295,11 @@ export default function Layout({ children }: { children: ReactNode }) {
               onClick={() => setSelector(true)}
               aria-label="თანამშრომლის განრიგის არჩევა"
             >
-              <Avatar name={selected?.name ?? "ტიფლისი"} size="small" />
+              <Avatar
+                name={selected?.name ?? "ტიფლისი"}
+                src={selected?.avatarUrl}
+                size="small"
+              />
               <span className="viewer-name">
                 {selected?.name ?? "თანამშრომელი"}
               </span>
@@ -506,7 +513,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                     setSelector(false);
                   }}
                 >
-                  <Avatar name={s.name} />
+                  <Avatar name={s.name} src={s.avatarUrl} />
                   <div>
                     <b>{s.name}</b>
                     <small>{s.role}</small>
