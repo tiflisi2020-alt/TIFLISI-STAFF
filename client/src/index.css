@@ -3285,6 +3285,13 @@ select:focus {
     align-items: stretch;
     flex-direction: column;
   }
+  .announcement-admin-row {
+    flex-direction: column;
+  }
+  .announcement-admin-row-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
   .login-panel {
     padding: 19px;
     gap: 12px;
@@ -3809,6 +3816,13 @@ select:focus {
   grid-column: 1 / -1;
   margin-top: 0;
 }
+.announcement-admin-form-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
 .announcement-admin-list {
   margin-top: 28px;
   border-top: 1px solid var(--border);
@@ -3824,6 +3838,53 @@ select:focus {
   gap: 16px;
   padding: 16px 0;
   border-bottom: 1px solid var(--border);
+}
+.announcement-admin-row.is-inactive {
+  opacity: 0.72;
+}
+.announcement-admin-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.announcement-admin-kind,
+.announcement-admin-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.announcement-admin-kind {
+  color: #6B2E24;
+  background: #F2D8CA;
+}
+.announcement-admin-kind.kind-urgent {
+  color: #7B2418;
+  background: #F4C8BC;
+}
+.announcement-admin-kind.kind-schedule {
+  color: #65411E;
+  background: #F2E3BF;
+}
+.announcement-admin-kind.kind-event {
+  color: #4E426F;
+  background: #E7DFF4;
+}
+.announcement-admin-chip {
+  color: #6E5248;
+  background: #F4E8DF;
+}
+.announcement-admin-chip.is-live {
+  color: #245B4D;
+  background: #E2F1E9;
+}
+.announcement-admin-chip.is-ended {
+  color: #7B6258;
+  background: #EFE6DF;
 }
 .announcement-admin-row b,
 .announcement-admin-row p,
@@ -3845,6 +3906,19 @@ select:focus {
   margin-top: 7px;
   color: #876F64;
   font-size: 9px;
+}
+.announcement-admin-row-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.announcement-admin-row-actions .secondary-button {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 11px;
 }
 .reject-button {
   color: #8E4E44;

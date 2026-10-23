@@ -103,7 +103,68 @@ export const adminRouter = router({
       });
       return { success: true };
     }),
+  updateAnnouncement: adminProcedure
+    .input(announcementInput.extend({ id: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      const existing = await supabase<AdminAnnouncement[]>(
+        "tiflisi_announcements",
+        `select=${announcementFields}&id=eq.${input.id}&limit=1`
+      );
+      if (!existing[0])
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "განცხადება ვერ მოიძებნა.",
+        });
+      const rows = await supabase<unknown[]>(
+        "tiflisi_announcements",
+        `id=eq.${input.id}`,
+        {
+          method: "PATCH",
+          body: {
+            title: input.title,
+            body: input.body,
+            kind: input.kind,
+            is_pinned: input.isPinned,
+            expires_at: input.expiresAt,
+          },
+        }
+      );
+      if (rows.length !== 1)
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "განცხადება ვერ განახლდა. ხელახლა სცადე.",
+        });
+      return { success: true };
+    }),
   archiveAnnouncement: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      const now = new Date().toISOString();
+      const existing = await supabase<AdminAnnouncement[]>(
+        "tiflisi_announcements",
+        `select=${announcementFields}&id=eq.${input.id}&limit=1`
+      );
+      if (!existing[0])
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "განცხადება ვერ მოიძებნა.",
+        });
+      const rows = await supabase<unknown[]>(
+        "tiflisi_announcements",
+        `id=eq.${input.id}`,
+        {
+          method: "PATCH",
+          body: { expires_at: now, is_pinned: false },
+        }
+      );
+      if (rows.length !== 1)
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "განცხადება ვერ დაიმალა. ხელახლა სცადე.",
+        });
+      return { success: true, hidden: true as const };
+    }),
+  deleteAnnouncement: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
       const rows = await supabase<unknown[]>(

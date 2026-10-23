@@ -9,6 +9,7 @@ import {
   Link2,
   LogIn,
   Megaphone,
+  Pencil,
   RefreshCw,
   Save,
   ShieldCheck,
@@ -71,6 +72,26 @@ export default function Admin() {
   >("info");
   const [announcementPinned, setAnnouncementPinned] = useState(false);
   const [announcementExpiry, setAnnouncementExpiry] = useState("");
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState<
+    string | null
+  >(null);
+  const resetAnnouncementForm = () => {
+    setEditingAnnouncementId(null);
+    setAnnouncementTitle("");
+    setAnnouncementBody("");
+    setAnnouncementKind("info");
+    setAnnouncementPinned(false);
+    setAnnouncementExpiry("");
+  };
+  const expiryToDateInput = (iso: string | null) => {
+    if (!iso) return "";
+    const value = new Date(iso);
+    if (Number.isNaN(value.getTime())) return "";
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
   const roster = staff.filter(s => s.department === department);
   const person = roster.find(s => s.id === staffId) ?? roster[0];
   const weekStart = mondayOf(new Date(`${date}T12:00:00`));
@@ -193,29 +214,47 @@ export default function Admin() {
     },
     onError: e => toast.error(e.message),
   });
+  const refreshAnnouncementViews = async () => {
+    await announcements.refetch();
+    await utils.staff.notices.invalidate();
+    await utils.staff.announcements.invalidate();
+  };
   const createAnnouncement = trpc.admin.createAnnouncement.useMutation({
     onSuccess: async () => {
       toast.success("განცხადება გამოქვეყნდა.");
-      setAnnouncementTitle("");
-      setAnnouncementBody("");
-      setAnnouncementKind("info");
-      setAnnouncementPinned(false);
-      setAnnouncementExpiry("");
-      await announcements.refetch();
-      await utils.staff.notices.invalidate();
-      await utils.staff.announcements.invalidate();
+      resetAnnouncementForm();
+      await refreshAnnouncementViews();
+    },
+    onError: e => toast.error(e.message),
+  });
+  const updateAnnouncement = trpc.admin.updateAnnouncement.useMutation({
+    onSuccess: async () => {
+      toast.success("განცხადება განახლდა.");
+      resetAnnouncementForm();
+      await refreshAnnouncementViews();
     },
     onError: e => toast.error(e.message),
   });
   const archiveAnnouncement = trpc.admin.archiveAnnouncement.useMutation({
     onSuccess: async () => {
-      toast.success("განცხადება დაარქივდა.");
-      await announcements.refetch();
-      await utils.staff.notices.invalidate();
-      await utils.staff.announcements.invalidate();
+      toast.success("განცხადება მთავარი გვერდიდან მოიხსნა.");
+      await refreshAnnouncementViews();
     },
     onError: e => toast.error(e.message),
   });
+  const deleteAnnouncement = trpc.admin.deleteAnnouncement.useMutation({
+    onSuccess: async () => {
+      toast.success("განცხადება სამუდამოდ წაიშალა.");
+      if (editingAnnouncementId) resetAnnouncementForm();
+      await refreshAnnouncementViews();
+    },
+    onError: e => toast.error(e.message),
+  });
+  const announcementBusy =
+    createAnnouncement.isPending ||
+    updateAnnouncement.isPending ||
+    archiveAnnouncement.isPending ||
+    deleteAnnouncement.isPending;
   if (auth.loading) return <AdminSkeleton />;
   if (!auth.user)
     return (
@@ -799,7 +838,12 @@ export default function Admin() {
         <section className="manager-panel announcements-admin-panel">
           <div className="section-title">
             <div>
-              <h2><Megaphone size={19} /> ახალი განცხადება</h2>
+              <h2>
+                <Megaphone size={19} />{" "}
+                {editingAnnouncementId
+                  ? "განცხადების რედაქტირება"
+                  : "ახალი განცხადება"}
+              </h2>
               <p>გამოქვეყნებული ინფორმაცია თანამშრომლების მთავარ გვერდზე გამოჩნდება.</p>
             </div>
             <span>{announcements.data?.length ?? 0} ჩანაწერი</span>
@@ -808,7 +852,7 @@ export default function Admin() {
             className="announcement-admin-form"
             onSubmit={event => {
               event.preventDefault();
-              createAnnouncement.mutate({
+              const payload = {
                 title: announcementTitle,
                 body: announcementBody,
                 kind: announcementKind,
@@ -816,7 +860,13 @@ export default function Admin() {
                 expiresAt: announcementExpiry
                   ? new Date(`${announcementExpiry}T23:59:59`).toISOString()
                   : null,
-              });
+              };
+              if (editingAnnouncementId)
+                updateAnnouncement.mutate({
+                  id: editingAnnouncementId,
+                  ...payload,
+                });
+              else createAnnouncement.mutate(payload);
             }}
           >
             <label>
@@ -871,11 +921,42 @@ export default function Admin() {
               მთავარ გვერდზე ზემოთ გამოჩნდეს
             </label>
             <div className="admin-save-row announcement-admin-actions">
-              <span className="muted">განცხადება ხილული იქნება ავტორიზებული თანამშრომლებისთვის.</span>
-              <button className="primary-button" type="submit" disabled={createAnnouncement.isPending}>
-                <Megaphone size={16} />
-                {createAnnouncement.isPending ? "ქვეყნდება…" : "გამოქვეყნება"}
-              </button>
+              <span className="muted">
+                {editingAnnouncementId
+                  ? "ცვლილება მთავარ გვერდზეც გამოჩნდება. ახალი push არ გაიგზავნება."
+                  : "განცხადება ხილული იქნება ავტორიზებული თანამშრომლებისთვის."}
+              </span>
+              <div className="announcement-admin-form-buttons">
+                {editingAnnouncementId ? (
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled={announcementBusy}
+                    onClick={resetAnnouncementForm}
+                  >
+                    გაუქმება
+                  </button>
+                ) : null}
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={announcementBusy}
+                >
+                  {editingAnnouncementId ? (
+                    <>
+                      <Save size={16} />
+                      {updateAnnouncement.isPending ? "ინახება…" : "შენახვა"}
+                    </>
+                  ) : (
+                    <>
+                      <Megaphone size={16} />
+                      {createAnnouncement.isPending
+                        ? "ქვეყნდება…"
+                        : "გამოქვეყნება"}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
           <div className="announcement-admin-list">
@@ -890,25 +971,111 @@ export default function Admin() {
             ) : announcements.isError ? (
               <div className="error-banner">განცხადებების სია ვერ ჩაიტვირთა.</div>
             ) : announcements.data?.length ? (
-              announcements.data.map(item => (
-                <article className="announcement-admin-row" key={item.id}>
-                  <div>
-                    <b>{item.title}</b>
-                    <p>{item.body}</p>
-                    <small>{item.is_pinned ? "მნიშვნელოვანი · " : ""}{new Date(item.published_at).toLocaleDateString("ka-GE")}</small>
-                  </div>
-                  <button
-                    className="icon-button"
-                    type="button"
-                    title="არქივირება"
-                    aria-label={`${item.title} არქივში გადატანა`}
-                    disabled={archiveAnnouncement.isPending}
-                    onClick={() => archiveAnnouncement.mutate({ id: item.id })}
+              announcements.data.map(item => {
+                const now = Date.now();
+                const published = new Date(item.published_at).getTime();
+                const expires = item.expires_at
+                  ? new Date(item.expires_at).getTime()
+                  : null;
+                const active =
+                  published <= now && (expires === null || expires >= now);
+                const kindLabel =
+                  item.kind === "urgent"
+                    ? "სასწრაფო"
+                    : item.kind === "schedule"
+                      ? "განრიგი"
+                      : item.kind === "event"
+                        ? "ღონისძიება"
+                        : "ინფორმაცია";
+                return (
+                  <article
+                    className={`announcement-admin-row${active ? "" : " is-inactive"}`}
+                    key={item.id}
                   >
-                    <Trash2 size={17} />
-                  </button>
-                </article>
-              ))
+                    <div>
+                      <div className="announcement-admin-meta">
+                        <span className={`announcement-admin-kind kind-${item.kind}`}>
+                          {kindLabel}
+                        </span>
+                        {item.is_pinned && active ? (
+                          <span className="announcement-admin-chip">მნიშვნელოვანი</span>
+                        ) : null}
+                        <span
+                          className={`announcement-admin-chip${active ? " is-live" : " is-ended"}`}
+                        >
+                          {active ? "აქტიური მთავარზე" : "მთავარზე აღარ ჩანს"}
+                        </span>
+                      </div>
+                      <b>{item.title}</b>
+                      <p>{item.body}</p>
+                      <small>
+                        გამოქვეყნდა{" "}
+                        {new Date(item.published_at).toLocaleDateString("ka-GE", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                        {expires
+                          ? ` · ვადა ${new Date(item.expires_at!).toLocaleDateString("ka-GE", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}`
+                          : " · ვადა არ აქვს"}
+                      </small>
+                    </div>
+                    <div className="announcement-admin-row-actions">
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        disabled={announcementBusy}
+                        onClick={() => {
+                          setEditingAnnouncementId(item.id);
+                          setAnnouncementTitle(item.title);
+                          setAnnouncementBody(item.body);
+                          setAnnouncementKind(item.kind);
+                          setAnnouncementPinned(item.is_pinned);
+                          setAnnouncementExpiry(
+                            expiryToDateInput(item.expires_at)
+                          );
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                      >
+                        <Pencil size={14} /> რედაქტირება
+                      </button>
+                      {active ? (
+                        <button
+                          className="secondary-button"
+                          type="button"
+                          disabled={announcementBusy}
+                          onClick={() =>
+                            archiveAnnouncement.mutate({ id: item.id })
+                          }
+                        >
+                          მთავარიდან მოხსნა
+                        </button>
+                      ) : null}
+                      <button
+                        className="icon-button"
+                        type="button"
+                        title="სამუდამოდ წაშლა"
+                        aria-label={`${item.title} სამუდამოდ წაშლა`}
+                        disabled={announcementBusy}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `წაიშალოს სამუდამოდ „${item.title}“?`
+                            )
+                          )
+                            deleteAnnouncement.mutate({ id: item.id });
+                        }}
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
             ) : (
               <EmptyState title="განცხადებები ჯერ არ არის" description="პირველი განცხადება ზემოთ მოცემული ფორმით გამოაქვეყნე." />
             )}
