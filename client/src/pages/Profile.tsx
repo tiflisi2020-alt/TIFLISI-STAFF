@@ -266,71 +266,80 @@ export default function Profile() {
           </button>
         </div>
       )}
-      <div className="profile-grid">
-        <section className="profile-card">
+      <div className="profile-stack">
+        <section className="profile-section profile-identity">
           <div className="profile-cover" />
-          <Avatar
-            name={
-              privateProfile?.preferredName ||
-              myStaff?.name ||
-              auth.user?.name ||
-              selected?.name ||
-              "ტიფლისი"
-            }
-            src={privateProfile?.avatarUrl}
-            size="large"
-          />
-          {auth.user && (
-            <div className="profile-avatar-actions">
-              <input
-                ref={avatarInput}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={selectAvatar}
-                hidden
-              />
-              <button
-                className="secondary-button"
-                type="button"
-                disabled={uploadAvatar.isPending || deleteAvatar.isPending}
-                onClick={() => avatarInput.current?.click()}
-              >
-                <ImagePlus size={15} />
-                {uploadAvatar.isPending ? "იტვირთება…" : "ფოტოს ატვირთვა"}
-              </button>
-              {privateProfile?.avatarUrl && (
+          <div className="profile-identity-body">
+            <Avatar
+              name={
+                privateProfile?.preferredName ||
+                myStaff?.name ||
+                auth.user?.name ||
+                selected?.name ||
+                "ტიფლისი"
+              }
+              src={privateProfile?.avatarUrl}
+              size="large"
+            />
+            {auth.user && (
+              <div className="profile-avatar-actions">
+                <input
+                  ref={avatarInput}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={selectAvatar}
+                  hidden
+                />
                 <button
-                  className="text-link"
+                  className="secondary-button"
                   type="button"
                   disabled={uploadAvatar.isPending || deleteAvatar.isPending}
-                  onClick={() => deleteAvatar.mutate()}
+                  onClick={() => avatarInput.current?.click()}
                 >
-                  <Trash2 size={14} /> წაშლა
+                  <ImagePlus size={15} />
+                  {uploadAvatar.isPending ? "იტვირთება…" : "ფოტოს ატვირთვა"}
                 </button>
-              )}
-              <small>ავტომატურად მცირდება 512px-მდე · მაქს. 1.5 MB</small>
-            </div>
-          )}
-          <h2>
-            {privateProfile?.preferredName ||
-              myStaff?.name ||
-              auth.user?.name ||
-              selected?.name ||
-              "თანამშრომელი"}
-          </h2>
-          <p>
-            {myStaff?.role ??
-              (auth.user
-                ? auth.user.role === "admin"
-                  ? "მენეჯერი"
-                  : "თანამშრომლის ანგარიში"
-                : selected?.role)}
-          </p>
-          <span className="tag">
-            <CheckCircle2 size={13} />{" "}
-            {auth.user ? "ავტორიზებული ანგარიში" : "ნახვის რეჟიმი"}
-          </span>
-          <dl>
+                {privateProfile?.avatarUrl && (
+                  <button
+                    className="text-link"
+                    type="button"
+                    disabled={uploadAvatar.isPending || deleteAvatar.isPending}
+                    onClick={() => deleteAvatar.mutate()}
+                  >
+                    <Trash2 size={14} /> წაშლა
+                  </button>
+                )}
+                <small>ავტომატურად მცირდება 512px-მდე · მაქს. 1.5 MB</small>
+              </div>
+            )}
+            <h2>
+              {privateProfile?.preferredName ||
+                myStaff?.name ||
+                auth.user?.name ||
+                selected?.name ||
+                "თანამშრომელი"}
+            </h2>
+            <p>
+              {myStaff?.role ??
+                (auth.user
+                  ? auth.user.role === "admin"
+                    ? "მენეჯერი"
+                    : "თანამშრომლის ანგარიში"
+                  : selected?.role)}
+            </p>
+            <span className="tag">
+              <CheckCircle2 size={13} />{" "}
+              {auth.user ? "ავტორიზებული ანგარიში" : "ნახვის რეჟიმი"}
+            </span>
+          </div>
+        </section>
+
+        <section className="profile-section">
+          <div className="section-title">
+            <h2>ანგარიშის ინფორმაცია</h2>
+            <UserRound size={19} />
+          </div>
+          <dl className="profile-details">
             <div>
               <dt>რესტორანი</dt>
               <dd>ტიფლისი</dd>
@@ -353,279 +362,290 @@ export default function Profile() {
             )}
           </dl>
         </section>
-        <section className="profile-work">
+
+        <section className="profile-section">
           <div className="section-title">
-            <h2>სამუშაო ინფორმაცია</h2>
-            <UserRound size={19} />
-          </div>
-          <p className="muted">{person?.name} · არჩეული კვირა</p>
-          <div className="work-stat">
-            <span className="stat-icon">
-              <CalendarDays size={21} />
-            </span>
             <div>
-              <b>{shifts.length} ცვლა</b>
-              <span>კვირის დაგეგმილი ცვლები</span>
+              <h2>სამუშაო კვირა</h2>
+              <p>{person?.name ? `${person.name} · არჩეული კვირა` : "არჩეული კვირა"}</p>
             </div>
+            <CalendarDays size={19} />
           </div>
-          <div className="work-stat">
-            <span className="stat-icon">
-              <Clock3 size={21} />
-            </span>
-            <div>
-              <b>{new Set(shifts.map(s => s.date)).size} სამუშაო დღე</b>
-              <span>არსებული განრიგის მიხედვით</span>
+          <div className="work-stat-grid">
+            <div className="work-stat">
+              <span className="stat-icon">
+                <CalendarDays size={21} />
+              </span>
+              <div>
+                <b>{shifts.length} ცვლა</b>
+                <span>კვირის დაგეგმილი ცვლები</span>
+              </div>
+            </div>
+            <div className="work-stat">
+              <span className="stat-icon">
+                <Clock3 size={21} />
+              </span>
+              <div>
+                <b>{new Set(shifts.map(s => s.date)).size} სამუშაო დღე</b>
+                <span>არსებული განრიგის მიხედვით</span>
+              </div>
             </div>
           </div>
           <Link href="/schedule" className="secondary-button full-width">
             განრიგის ნახვა
           </Link>
         </section>
-      </div>
-      {auth.user && (
-        <section className="profile-editor">
-          <div className="section-title">
-            <div>
-              <h2>ჩემი პროფილის მორგება</h2>
-              <p>ეს ინფორმაცია მხოლოდ შენს ანგარიშში ინახება.</p>
+
+        {auth.user && (
+          <section className="profile-section profile-editor">
+            <div className="section-title">
+              <div>
+                <h2>პირადი ინფორმაცია</h2>
+                <p>ეს მონაცემები მხოლოდ შენს ანგარიშში ინახება.</p>
+              </div>
+              <UserRound size={19} />
             </div>
-            <UserRound size={19} />
-          </div>
-          <div className="profile-editor-grid">
-            <label>
-              სასურველი სახელი
-              <input
-                value={preferredName}
-                onChange={event => setPreferredName(event.target.value)}
-                maxLength={80}
-                placeholder="როგორ მოგმართოთ"
-              />
-            </label>
-            <label>
-              ტელეფონი
-              <input
-                value={phone}
-                onChange={event => setPhone(event.target.value)}
-                maxLength={40}
-                placeholder="+995 5XX XX XX XX"
-              />
-            </label>
-            <label>
-              საგანგებო კონტაქტი
-              <input
-                value={emergencyContact}
-                onChange={event => setEmergencyContact(event.target.value)}
-                maxLength={120}
-                placeholder="სახელი და ნომერი"
-              />
-            </label>
-            <label className="profile-editor-wide">
-              მოკლე ბიო / დამატებითი ინფორმაცია
-              <textarea
-                value={bio}
-                onChange={event => setBio(event.target.value)}
-                maxLength={500}
-                rows={3}
-                placeholder="მაგ. გამოცდილება, ენა ან სამუშაო პრეფერენცია"
-              />
-            </label>
-          </div>
-          <div className="admin-save-row">
-            <span className="muted">სავალდებულო ველი არ არის.</span>
-            <button
-              className="primary-button"
-              type="button"
-              disabled={saveProfile.isPending || profile.isLoading || profile.isError}
-              onClick={() =>
-                saveProfile.mutate({
-                  preferredName,
-                  phone,
-                  bio,
-                  emergencyContact,
-                })
-              }
-            >
-              {saveProfile.isPending ? "ინახება…" : "პროფილის შენახვა"}
-            </button>
-          </div>
-        </section>
-      )}
-      {auth.user?.role === "admin" && (
-        <section className="manager-panel">
-          <div className="section-title">
-            <h2>
-              <ShieldCheck size={20} /> ანგარიშების დაკავშირება
-            </h2>
-            <span className="tag">მენეჯერი</span>
-          </div>
-          <p className="muted">
-            შესული თანამშრომლის ანგარიში დაუკავშირე რეალურ ჩანაწერს. თითო
-            თანამშრომელი მხოლოდ ერთ ანგარიშს უკავშირდება.
-          </p>
-          <div className="manager-form">
-            <label>
-              ანგარიში
-              <select
-                value={accountId || String(auth.user.id)}
-                onChange={e => setAccountId(e.target.value)}
+            <div className="profile-editor-grid">
+              <label>
+                სასურველი სახელი
+                <input
+                  value={preferredName}
+                  onChange={event => setPreferredName(event.target.value)}
+                  maxLength={80}
+                  placeholder="როგორ მოგმართოთ"
+                />
+              </label>
+              <label>
+                ტელეფონი
+                <input
+                  value={phone}
+                  onChange={event => setPhone(event.target.value)}
+                  maxLength={40}
+                  placeholder="+995 5XX XX XX XX"
+                />
+              </label>
+              <label>
+                საგანგებო კონტაქტი
+                <input
+                  value={emergencyContact}
+                  onChange={event => setEmergencyContact(event.target.value)}
+                  maxLength={120}
+                  placeholder="სახელი და ნომერი"
+                />
+              </label>
+              <label className="profile-editor-wide">
+                მოკლე ბიო / დამატებითი ინფორმაცია
+                <textarea
+                  value={bio}
+                  onChange={event => setBio(event.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="მაგ. გამოცდილება, ენა ან სამუშაო პრეფერენცია"
+                />
+              </label>
+            </div>
+            <div className="admin-save-row">
+              <span className="muted">სავალდებულო ველი არ არის.</span>
+              <button
+                className="primary-button"
+                type="button"
+                disabled={
+                  saveProfile.isPending || profile.isLoading || profile.isError
+                }
+                onClick={() =>
+                  saveProfile.mutate({
+                    preferredName,
+                    phone,
+                    bio,
+                    emergencyContact,
+                  })
+                }
               >
-                {(
-                  accounts.data ?? [
-                    {
-                      id: auth.user.id,
-                      name: auth.user.name,
-                      email: auth.user.email,
-                      staff_name: myStaff?.name,
-                    },
-                  ]
-                ).map(a => (
-                  <option key={a.id} value={a.id}>
-                    {a.name || a.email || `ანგარიში #${a.id}`}
-                    {a.staff_name ? ` · ${a.staff_name}` : " · დასაკავშირებელი"}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              თანამშრომელი
-              <select
-                value={employeeId}
-                onChange={e => setEmployeeId(e.target.value)}
+                {saveProfile.isPending ? "ინახება…" : "პროფილის შენახვა"}
+              </button>
+            </div>
+          </section>
+        )}
+
+        {auth.user?.role === "admin" && (
+          <section className="profile-section manager-panel">
+            <div className="section-title">
+              <h2>
+                <ShieldCheck size={20} /> ანგარიშების დაკავშირება
+              </h2>
+              <span className="tag">მენეჯერი</span>
+            </div>
+            <p className="muted">
+              შესული თანამშრომლის ანგარიში დაუკავშირე რეალურ ჩანაწერს. თითო
+              თანამშრომელი მხოლოდ ერთ ანგარიშს უკავშირდება.
+            </p>
+            <div className="manager-form">
+              <label>
+                ანგარიში
+                <select
+                  value={accountId || String(auth.user.id)}
+                  onChange={e => setAccountId(e.target.value)}
+                >
+                  {(
+                    accounts.data ?? [
+                      {
+                        id: auth.user.id,
+                        name: auth.user.name,
+                        email: auth.user.email,
+                        staff_name: myStaff?.name,
+                      },
+                    ]
+                  ).map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.name || a.email || `ანგარიში #${a.id}`}
+                      {a.staff_name ? ` · ${a.staff_name}` : " · დასაკავშირებელი"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                თანამშრომელი
+                <select
+                  value={employeeId}
+                  onChange={e => setEmployeeId(e.target.value)}
+                >
+                  <option value="">აირჩიე თანამშრომელი</option>
+                  {staff.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} · {s.role}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                className="primary-button"
+                disabled={!employeeId || link.isPending}
+                onClick={connect}
               >
-                <option value="">აირჩიე თანამშრომელი</option>
-                {staff.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} · {s.role}
-                  </option>
+                <Link2 size={16} />
+                {link.isPending ? "ინახება…" : "დაკავშირება"}
+              </button>
+            </div>
+            {accounts.isError && (
+              <p className="form-error">ანგარიშების სია ვერ ჩაიტვირთა.</p>
+            )}
+          </section>
+        )}
+
+        {!!auth.user && (
+          <section className="profile-section requests-panel">
+            <div className="section-title">
+              <h2>დასადასტურებელი გაცვლები</h2>
+              <span className="tag">შენ გთხოვენ</span>
+            </div>
+            {incoming.isLoading ? (
+              <RowSkeleton count={2} />
+            ) : incoming.isError ? (
+              <div className="error-banner">
+                მოთხოვნები ვერ ჩაიტვირთა.{" "}
+                <button onClick={() => incoming.refetch()}>ხელახლა ცდა</button>
+              </div>
+            ) : incoming.data?.length ? (
+              <div className="request-list">
+                {incoming.data.map(r => (
+                  <article className="request-row" key={r.id}>
+                    <div>
+                      <b>
+                        {r.requester_name} გთხოვს, გამახვიდე ნაცვლად
+                      </b>
+                      <p>
+                        <GeorgianDate date={r.own_date} /> ·{" "}
+                        {prettyTime(r.own_time)}
+                      </p>
+                      <small>{r.reason}</small>
+                    </div>
+                    <div className="request-actions">
+                      <button
+                        className="primary-button"
+                        onClick={() =>
+                          respond.mutate({ id: r.id, status: "approved" })
+                        }
+                        disabled={respond.isPending}
+                      >
+                        <Check size={15} /> ვადასტურებ
+                      </button>
+                      <button
+                        className="secondary-button reject-button"
+                        onClick={() =>
+                          respond.mutate({ id: r.id, status: "rejected" })
+                        }
+                        disabled={respond.isPending}
+                      >
+                        <X size={15} /> უარს ვამბობ
+                      </button>
+                    </div>
+                  </article>
                 ))}
-              </select>
-            </label>
-            <button
-              className="primary-button"
-              disabled={!employeeId || link.isPending}
-              onClick={connect}
-            >
-              <Link2 size={16} />
-              {link.isPending ? "ინახება…" : "დაკავშირება"}
-            </button>
-          </div>
-          {accounts.isError && (
-            <p className="form-error">ანგარიშების სია ვერ ჩაიტვირთა.</p>
-          )}
-        </section>
-      )}
-      {!!auth.user && (
-        <section className="requests-panel">
+              </div>
+            ) : (
+              <EmptyState
+                title="დასადასტურებელი არაფერია"
+                description="როცა კოლეგა შენს ნაცვლად გამოსვლას გთხოვს, ღილაკები აქ და ზარის შეტყობინებაში გამოჩნდება."
+              />
+            )}
+          </section>
+        )}
+
+        <section className="profile-section requests-panel">
           <div className="section-title">
-            <h2>დადასტურება</h2>
-            <span className="tag">შენ გთხოვენ</span>
+            <h2>ჩემი გაცვლის მოთხოვნები</h2>
+            <Link href="/swap" className="text-link">
+              ახალი მოთხოვნა
+            </Link>
           </div>
-          {incoming.isLoading ? (
+          {requests.isLoading && auth.user ? (
             <RowSkeleton count={2} />
-          ) : incoming.isError ? (
+          ) : requests.isError ? (
             <div className="error-banner">
               მოთხოვნები ვერ ჩაიტვირთა.{" "}
-              <button onClick={() => incoming.refetch()}>ხელახლა ცდა</button>
+              <button onClick={() => requests.refetch()}>ხელახლა ცდა</button>
             </div>
-          ) : incoming.data?.length ? (
+          ) : requests.data?.length ? (
             <div className="request-list">
-              {incoming.data.map(r => (
+              {requests.data.map(r => (
                 <article className="request-row" key={r.id}>
                   <div>
                     <b>
-                      {r.requester_name} გთხოვს, გამახვიდე ნაცვლად
-                    </b>
-                    <p>
                       <GeorgianDate date={r.own_date} /> ·{" "}
                       {prettyTime(r.own_time)}
-                    </p>
+                    </b>
+                    <p>{r.target_name} გამოვა ნაცვლად</p>
                     <small>{r.reason}</small>
                   </div>
                   <div className="request-actions">
-                    <button
-                      className="primary-button"
-                      onClick={() =>
-                        respond.mutate({ id: r.id, status: "approved" })
-                      }
-                      disabled={respond.isPending}
-                    >
-                      <Check size={15} /> ვადასტურებ
-                    </button>
-                    <button
-                      className="secondary-button reject-button"
-                      onClick={() =>
-                        respond.mutate({ id: r.id, status: "rejected" })
-                      }
-                      disabled={respond.isPending}
-                    >
-                      <X size={15} /> უარს ვამბობ
-                    </button>
+                    <span className={`request-status status-${r.status}`}>
+                      {statuses[r.status]}
+                    </span>
+                    {r.status === "pending" && (
+                      <button
+                        className="request-cancel"
+                        onClick={() => cancel.mutate({ id: r.id })}
+                        disabled={cancel.isPending}
+                      >
+                        გაუქმება
+                      </button>
+                    )}
                   </div>
                 </article>
               ))}
             </div>
           ) : (
             <EmptyState
-              title="დასადასტურებელი არაფერია"
-              description="როცა კოლეგა შენს ნაცვლად გამოსვლას გთხოვს, ღილაკები აქ და ზარის შეტყობინებაში გამოჩნდება."
+              title="მოთხოვნები ჯერ არ არის"
+              description={
+                auth.user
+                  ? "გაგზავნილი მოთხოვნა და მისი სტატუსი აქ გამოჩნდება."
+                  : "შედი ანგარიშში, რომ შენი მოთხოვნები ნახო."
+              }
             />
           )}
         </section>
-      )}
-      <section className="requests-panel">
-        <div className="section-title">
-          <h2>ჩემი გაცვლის მოთხოვნები</h2>
-          <Link href="/swap" className="text-link">
-            ახალი მოთხოვნა
-          </Link>
-        </div>
-        {requests.isLoading && auth.user ? (
-          <RowSkeleton count={2} />
-        ) : requests.isError ? (
-          <div className="error-banner">
-            მოთხოვნები ვერ ჩაიტვირთა.{" "}
-            <button onClick={() => requests.refetch()}>ხელახლა ცდა</button>
-          </div>
-        ) : requests.data?.length ? (
-          <div className="request-list">
-            {requests.data.map(r => (
-              <article className="request-row" key={r.id}>
-                <div>
-                  <b>
-                    <GeorgianDate date={r.own_date} /> ·{" "}
-                    {prettyTime(r.own_time)}
-                  </b>
-                  <p>{r.target_name} გამოვა ნაცვლად</p>
-                  <small>{r.reason}</small>
-                </div>
-                <div className="request-actions">
-                  <span className={`request-status status-${r.status}`}>
-                    {statuses[r.status]}
-                  </span>
-                  {r.status === "pending" && (
-                    <button
-                      className="request-cancel"
-                      onClick={() => cancel.mutate({ id: r.id })}
-                      disabled={cancel.isPending}
-                    >
-                      გაუქმება
-                    </button>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title="მოთხოვნები ჯერ არ არის"
-            description={
-              auth.user
-                ? "გაგზავნილი მოთხოვნა და მისი სტატუსი აქ გამოჩნდება."
-                : "შედი ანგარიშში, რომ შენი მოთხოვნები ნახო."
-            }
-          />
-        )}
-      </section>
+      </div>
     </>
   );
 }

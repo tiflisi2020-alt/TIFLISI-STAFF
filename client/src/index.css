@@ -1937,26 +1937,30 @@ select:focus {
   flex: none;
   white-space: nowrap;
 }
-.profile-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 24px;
-  margin-bottom: 25px;
+.profile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  margin-bottom: 8px;
 }
-.profile-card {
+.profile-section {
   background: #FBF6F1;
   border: 1px solid var(--border);
   border-radius: 14px;
+  padding: 24px;
+}
+.profile-identity {
   overflow: hidden;
-  padding: 0 24px 23px;
-  position: relative;
+  padding: 0 0 24px;
 }
 .profile-cover {
   height: 76px;
   background: #F0DCCE;
-  margin: 0 -24px 0;
 }
-.profile-card > .avatar {
+.profile-identity-body {
+  padding: 0 24px;
+}
+.profile-identity .avatar {
   width: 88px;
   height: 88px;
   margin-top: -40px;
@@ -1982,48 +1986,57 @@ select:focus {
   color: #876F64;
   font-size: 8px;
 }
-.profile-card h2 {
+.profile-identity h2 {
   font-size: 17px;
   margin-top: 13px;
 }
-.profile-card > p {
+.profile-identity-body > p {
   font-size: 11px;
   color: #5C4034;
   margin: 8px 0 13px;
 }
-.profile-card dl {
-  margin: 21px 0 0;
+.profile-details {
+  margin: 6px 0 0;
 }
-.profile-card dl > div {
+.profile-details > div {
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  padding: 11px 0;
+  padding: 12px 0;
   border-top: 1px solid #EADDD2;
   gap: 15px;
 }
-.profile-card dt {
+.profile-details > div:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+.profile-details dt {
   color: #5C4034;
 }
-.profile-card dd {
+.profile-details dd {
   margin: 0;
   color: #6A463A;
   overflow-wrap: anywhere;
+  text-align: right;
 }
-.profile-work {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: #FBF6F1;
-  padding: 24px;
+.work-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0 20px;
 }
 .work-stat {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin: 23px 0;
+  gap: 14px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid #EADDD2;
+  border-radius: 12px;
+  background: #FFF8F3;
 }
 .work-stat b {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   display: block;
 }
@@ -2031,22 +2044,15 @@ select:focus {
   display: block;
   font-size: 10px;
   color: #5C4034;
-  margin-top: 7px;
+  margin-top: 6px;
 }
 .requests-panel,
 .manager-panel {
-  background: #FBF6F1;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 .profile-editor {
   background: #FFF8F3;
-  border: 1px solid #DCC2B2;
-  border-radius: 14px;
-  padding: 24px;
-  margin-bottom: 24px;
+  border-color: #DCC2B2;
 }
 .profile-editor-grid {
   display: grid;
@@ -2716,16 +2722,18 @@ select:focus {
   .today-chip {
     display: none;
   }
-  .profile-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+  .profile-stack {
+    gap: 18px;
   }
-  .profile-work {
+  .profile-section {
     padding: 20px;
   }
-  .profile-card {
+  .profile-identity-body {
     padding-left: 20px;
     padding-right: 20px;
+  }
+  .work-stat-grid {
+    gap: 12px;
   }
   .login-panel {
     flex-wrap: wrap;
@@ -3260,18 +3268,24 @@ select:focus {
   .search-box input {
     font-size: 11px;
   }
-  .profile-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
+  .profile-stack {
+    gap: 16px;
   }
-  .profile-editor {
+  .profile-section {
     padding: 19px;
+  }
+  .profile-identity-body {
+    padding-left: 19px;
+    padding-right: 19px;
   }
   .profile-editor-grid {
     grid-template-columns: 1fr;
   }
   .profile-editor-wide {
     grid-column: auto;
+  }
+  .work-stat-grid {
+    grid-template-columns: 1fr;
   }
   .announcement-admin-form {
     grid-template-columns: 1fr;
@@ -3311,19 +3325,12 @@ select:focus {
   .login-panel h2 {
     font-size: 13px;
   }
-  .profile-work {
-    padding: 21px;
-  }
-  .profile-card h2 {
+  .profile-identity h2 {
     font-size: 19px;
   }
-  .profile-card dt,
-  .profile-card dd {
+  .profile-details dt,
+  .profile-details dd {
     font-size: 10px;
-  }
-  .manager-panel,
-  .requests-panel {
-    padding: 20px;
   }
   .manager-panel h2,
   .requests-panel h2 {
