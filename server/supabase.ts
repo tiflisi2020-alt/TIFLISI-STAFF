@@ -90,7 +90,7 @@ export async function removeStaffAvatar(path: string) {
   });
 }
 
-export async function signedStaffAvatarUrl(path: string, expiresIn = 3600) {
+export async function signedStaffAvatarUrl(path: string, expiresIn = 60 * 60) {
   const response = await storageResponse(
     `object/sign/${STAFF_AVATAR_BUCKET}/${storagePath(path)}`,
     {

@@ -1,6 +1,7 @@
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerAuthRoutes } from "../authRoutes";
+import { registerStaffAvatarRoute } from "../staffAvatar";
 import { publicPlatformScript } from "./publicConfig";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -17,6 +18,7 @@ export function createApiApp() {
       .send(publicPlatformScript());
   });
   registerAuthRoutes(app);
+  registerStaffAvatarRoute(app);
   app.use(
     "/api/trpc",
     createExpressMiddleware({ router: appRouter, createContext })

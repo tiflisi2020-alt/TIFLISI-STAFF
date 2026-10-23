@@ -123,23 +123,17 @@ async function getStaffAvatarMap() {
     "tiflisi_profile_details",
     `select=account_id,avatar_path&avatar_path=not.is.null&limit=500`
   );
-  const accountById = new Map(accounts.map(row => [row.id, row.staff_id]));
-  const urls = await Promise.all(
-    profiles
-      .filter(row => row.avatar_path)
-      .map(async row => {
-        try {
-          return [row.account_id, await signedStaffAvatarUrl(row.avatar_path!)] as const;
-        } catch {
-          return [row.account_id, null] as const;
-        }
-      })
+  const accountById = new Map(
+    accounts.map(row => [Number(row.id), row.staff_id] as const)
   );
-  const urlByAccount = new Map(urls.filter(([, url]) => url));
+  // Prefer stable app URLs so React Query can keep roster cached without
+  // serving expired Supabase signed links.
   const result = new Map<string, string>();
-  for (const [index, staffId] of accountById) {
-    const url = urlByAccount.get(index);
-    if (staffId && url) result.set(staffId, url);
+  for (const row of profiles) {
+    if (!row.avatar_path) continue;
+    const staffId = accountById.get(Number(row.account_id));
+    if (!staffId) continue;
+    result.set(staffId, `/api/staff-avatar/${encodeURIComponent(staffId)}`);
   }
   return result;
 }
@@ -478,16 +472,27 @@ export const staffRouter = router({
       : null;
   }),
   profile: protectedProcedure.query(async ({ ctx }) => {
-    const rows = await supabase<ProfileDetailsRow[]>(
-      "tiflisi_profile_details",
-      `select=avatar_path,preferred_name,phone,bio,emergency_contact&account_id=eq.${ctx.user.id}&limit=1`
-    );
+    const [rows, accounts] = await Promise.all([
+      supabase<ProfileDetailsRow[]>(
+        "tiflisi_profile_details",
+        `select=avatar_path,preferred_name,phone,bio,emergency_contact&account_id=eq.${ctx.user.id}&limit=1`
+      ),
+      supabase<{ staff_id: string | null }[]>(
+        "tiflisi_accounts",
+        `select=staff_id&id=eq.${ctx.user.id}&limit=1`
+      ),
+    ]);
     const row = rows[0];
+    const staffId = accounts[0]?.staff_id;
+    const avatarUrl =
+      row?.avatar_path && staffId
+        ? `/api/staff-avatar/${encodeURIComponent(staffId)}`
+        : row?.avatar_path
+          ? await signedStaffAvatarUrl(row.avatar_path)
+          : null;
     return row
       ? {
-          avatarUrl: row.avatar_path
-            ? await signedStaffAvatarUrl(row.avatar_path)
-            : null,
+          avatarUrl,
           preferredName: row.preferred_name ?? "",
           phone: row.phone ?? "",
           bio: row.bio ?? "",
@@ -581,7 +586,16 @@ export const staffRouter = router({
           code: "INTERNAL_SERVER_ERROR",
           message: "ფოტოს ბმული ვერ შეინახა.",
         });
-      return { avatarUrl: await signedStaffAvatarUrl(path) };
+      const linked = await supabase<{ staff_id: string | null }[]>(
+        "tiflisi_accounts",
+        `select=staff_id&id=eq.${ctx.user.id}&limit=1`
+      );
+      const staffId = linked[0]?.staff_id;
+      return {
+        avatarUrl: staffId
+          ? `/api/staff-avatar/${encodeURIComponent(staffId)}`
+          : await signedStaffAvatarUrl(path),
+      };
     }),
   deleteAvatar: protectedProcedure.mutation(async ({ ctx }) => {
     const current = await supabase<Pick<ProfileDetailsRow, "avatar_path">[]>(

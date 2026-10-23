@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ArrowRight, Clock3, MapPin } from "lucide-react";
 import {
   prettyTime,
@@ -15,6 +16,10 @@ export function Avatar({
   src?: string | null;
   size?: "small" | "normal" | "large";
 }) {
+  const [broken, setBroken] = useState(false);
+  useEffect(() => {
+    setBroken(false);
+  }, [src]);
   const initials = name
     .trim()
     .split(/\s+/)
@@ -22,12 +27,17 @@ export function Avatar({
     .slice(0, 2)
     .join("");
   const color = name.length % 5;
+  const photo = src && !broken ? src : null;
   return (
     <span
-      className={`avatar avatar-${color} avatar-${size}`}
+      className={`avatar avatar-${color} avatar-${size}${photo ? " has-photo" : ""}`}
       aria-label={`${name}-ის ფოტო`}
     >
-      {src ? <img src={src} alt="" /> : initials || "ტ"}
+      {photo ? (
+        <img src={photo} alt="" onError={() => setBroken(true)} />
+      ) : (
+        initials || "ტ"
+      )}
     </span>
   );
 }
