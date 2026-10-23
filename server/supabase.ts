@@ -118,7 +118,7 @@ export const departments = {
   },
   cleaners: {
     label: "დასუფთავება",
-    role: "დამლაგებელი",
+    role: "დიასახლისი",
     shifts: "cleaner_positions",
     nameColumn: "cleaner_name",
   },
