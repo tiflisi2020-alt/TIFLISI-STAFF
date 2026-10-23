@@ -1943,6 +1943,25 @@ select:focus {
   gap: 22px;
   margin-bottom: 8px;
 }
+.profile-stats-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.profile-stats-dashboard .dashboard-top,
+.profile-stats-dashboard .dashboard-bottom {
+  margin-bottom: 0;
+}
+.profile-stats-hours {
+  margin-top: 11px;
+}
+.profile-stats-outlook {
+  margin-bottom: 0;
+  height: 100%;
+}
+.profile-stats-outlook .work-stat-grid {
+  margin-bottom: 0;
+}
 .profile-section {
   background: #FBF6F1;
   border: 1px solid var(--border);
@@ -3611,7 +3630,8 @@ select:focus {
   box-shadow: inset 0 0 0 2px #8B3A2A;
   background: #F0D8C8;
 }
-.admin-tabs {
+.admin-tabs,
+.profile-tabs {
   display: flex;
   gap: 9px;
   margin: 24px 0;
@@ -3679,7 +3699,8 @@ select:focus {
   color: #8B3A2A;
   white-space: nowrap;
 }
-.admin-tabs button {
+.admin-tabs button,
+.profile-tabs button {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3690,7 +3711,8 @@ select:focus {
   color: #6E5248;
   font-size: 11px;
 }
-.admin-tabs button.active {
+.admin-tabs button.active,
+.profile-tabs button.active {
   background: var(--primary);
   color: white;
   border-color: var(--primary);
@@ -4145,7 +4167,8 @@ select:focus {
     width: 100%;
     justify-content: space-between;
   }
-  .admin-tabs {
+  .admin-tabs,
+  .profile-tabs {
     flex-wrap: nowrap;
     overflow: auto;
     gap: 7px;
@@ -4154,12 +4177,14 @@ select:focus {
     grid-template-columns: 1fr;
     gap: 8px;
   }
-  .admin-tabs button {
+  .admin-tabs button,
+  .profile-tabs button {
     font-size: 9px;
     padding: 10px;
     white-space: nowrap;
   }
-  .admin-tabs svg {
+  .admin-tabs svg,
+  .profile-tabs svg {
     width: 13px;
   }
   .admin-form-grid {
@@ -4390,6 +4415,7 @@ select:focus {
   .segmented-control button,
   .department-tabs button,
   .admin-tabs button,
+  .profile-tabs button,
   .profile-avatar-actions .secondary-button,
   .profile-avatar-actions .text-link {
     font-size: 13px;
@@ -4397,6 +4423,7 @@ select:focus {
   .segmented-control button,
   .department-tabs button,
   .admin-tabs button,
+  .profile-tabs button,
   .month-heading .icon-button,
   .today-button {
     min-height: 44px;
@@ -4512,13 +4539,15 @@ select:focus {
     padding-right: 28px;
   }
   .department-tabs,
-  .admin-tabs {
+  .admin-tabs,
+  .profile-tabs {
     scroll-snap-type: x proximity;
     scroll-padding-inline: 16px;
     -webkit-overflow-scrolling: touch;
   }
   .department-tabs button,
-  .admin-tabs button {
+  .admin-tabs button,
+  .profile-tabs button {
     scroll-snap-align: start;
   }
   .person-status,
