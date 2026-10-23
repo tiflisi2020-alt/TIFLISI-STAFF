@@ -1264,27 +1264,28 @@ select:focus {
   gap: 15px;
 }
 .segmented-control {
-  background: #6C2C1F;
+  background: #F4E2D4;
+  border: 1px solid #D9B8A4;
   padding: 4px;
   border-radius: 9px;
   display: inline-flex;
-  gap: 4px;
+  gap: 5px;
 }
 .segmented-control button {
-  background: #8B3A2A;
+  background: transparent;
   padding: 10px 23px;
-  color: #FBF6F1;
-  font-size: 11px;
+  color: #6E5248;
+  font-size: 13px;
   font-weight: 600;
   border-radius: 7px;
 }
 .segmented-control button:hover:not(.selected) {
-  background: #7A3324;
+  background: #EAD2C3;
 }
 .segmented-control button.selected {
-  color: #fff;
-  background: #5A2418;
-  box-shadow: inset 0 0 0 1px #C99782;
+  color: #FFFFFF;
+  background: #8B3A2A;
+  box-shadow: 0 2px 5px rgba(74, 31, 22, .2);
 }
 .segmented-control button:focus-visible {
   outline: 2px solid #F3E6DA;
