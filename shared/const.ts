@@ -1,5 +1,9 @@
 export const COOKIE_NAME = "webdev_app_session";
 export const ONE_YEAR_MS = 1000 * 60 * 60 * 24 * 365;
+/** Signed-in staff stay logged in for 30 days unless they sign out. */
+export const SESSION_MS = 1000 * 60 * 60 * 24 * 30;
+/** When less than 15 days remain, issue a fresh 30-day cookie on the next request. */
+export const SESSION_RENEW_WHEN_REMAINING_MS = 1000 * 60 * 60 * 24 * 15;
 export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = 'Please login (10001)';
 export const NOT_ADMIN_ERR_MSG = 'You do not have required permission (10002)';

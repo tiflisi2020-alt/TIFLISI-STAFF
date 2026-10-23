@@ -1,13 +1,12 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
-import { COOKIE_NAME } from "../shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
+import { COOKIE_NAME, SESSION_MS } from "../shared/const";
+import { clearSessionCookies, getSessionCookieOptions } from "./_core/cookies";
 import { sdk } from "./_core/sdk";
 import { upsertSupabaseUser, invalidateUserSessions } from "./db";
 import { AuthError, authRequest, verifiedIdentity } from "./supabaseAuth";
 
 const SITE = "https://tiflisi-staff.vercel.app";
-const SESSION_MS = 8 * 60 * 60 * 1000;
 const emailSchema = z.string().trim().toLowerCase().email().max(254);
 const passwordSchema = z
   .string()
@@ -191,7 +190,7 @@ export function registerAuthRoutes(app: Express) {
       // Require a fresh password sign-in after resetting, instead of logging in with
       // a recovery link. Old local app sessions in this browser are cleared.
       await invalidateUserSessions(`supabase:${identity.id}`);
-      res.clearCookie(COOKIE_NAME, getSessionCookieOptions(req));
+      clearSessionCookies(res, COOKIE_NAME);
       res.json({
         success: true,
         message: "პაროლი შეიცვალა. შედი ახალი პაროლით.",

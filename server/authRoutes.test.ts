@@ -102,10 +102,13 @@ describe("Supabase Auth route wiring", () => {
     expect(result.body.role).toBe("user");
     expect(result.headers["set-cookie"][0]).toContain("HttpOnly");
     expect(result.headers["set-cookie"][0]).toContain("Secure");
-    expect(result.headers["set-cookie"][0]).toContain("SameSite=None");
+    expect(result.headers["set-cookie"][0]).toContain("SameSite=Lax");
     expect(sign).toHaveBeenCalledWith(
       "supabase:verified-user",
-      expect.objectContaining({ authVersion: 3, expiresInMs: 28800000 })
+      expect.objectContaining({
+        authVersion: 3,
+        expiresInMs: 1000 * 60 * 60 * 24 * 30,
+      })
     );
   });
   it("returns a visible error and no cookie for an unconfirmed identity", async () => {

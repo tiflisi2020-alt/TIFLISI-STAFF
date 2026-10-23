@@ -210,6 +210,7 @@ class SDKServer {
     appId: string;
     name: string;
     authVersion?: number;
+    exp?: number;
   } | null> {
     if (!cookieValue) {
       console.warn("[Auth] Missing session cookie");
@@ -221,7 +222,7 @@ class SDKServer {
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
-      const { openId, appId, name, authVersion } = payload as Record<
+      const { openId, appId, name, authVersion, exp } = payload as Record<
         string,
         unknown
       >;
@@ -241,6 +242,7 @@ class SDKServer {
         appId,
         name,
         authVersion: typeof authVersion === "number" ? authVersion : undefined,
+        exp: typeof exp === "number" ? exp : undefined,
       };
     } catch (error) {
       console.warn("[Auth] Session verification failed", String(error));

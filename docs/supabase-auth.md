@@ -18,6 +18,6 @@ Supabase-ის ჩაშენებული ელფოსტის სე�
 - https://supabase.com/docs/guides/auth/redirect-urls — დამატებითი ზუსტი redirect URLs, Site URL fallback, იმპლიციტური token hash ფრაგმენტი.
 - https://supabase.com/docs/guides/auth/auth-email-templates — default ConfirmationURL, Token/TokenHash და server-side verify მეთოდები.
 
-სესიის გასაუქმებლად `tiflisi_accounts` ცხრილს დაემატა `session_version integer not null default 0`. JWT-ში ჩაიწერება ვერსია; პაროლის აღდგენა ზრდის ვერსიას და ძველ სესიებს წვდომა აღარ აქვთ. აპლიკაციის cookie ვადა 8 საათია.
+სესიის გასაუქმებლად `tiflisi_accounts` ცხრილს დაემატა `session_version integer not null default 0`. JWT-ში ჩაიწერება ვერსია; პაროლის აღდგენა ზრდის ვერსიას და ძველ სესიებს წვდომა აღარ აქვთ. აპლიკაციის cookie ვადა 30 დღეა; აქტიური გამოყენებისას სესია ავტომატურად გრძელდება (sliding renewal). გამოსვლა მხოლოდ ღილაკით ან პაროლის შეცვლით.
 
 სესიის გაუქმება სრულდება service_role-only `invalidate_tiflisi_sessions` SQL ფუნქციის ატომური increment-ით; authenticated/anon მომხმარებლებს ფუნქციის შესრულება აკრძალული აქვთ. დამოუკიდებელი კოდის მიმოხილვით აღმოჩენილი ძველი OWNER_OPEN_ID bypass ორივე ადგილას მოიხსნა. მენეჯერის როლი ეფუძნება მხოლოდ დადასტურებულ შეთანხმებულ ელფოსტას.
